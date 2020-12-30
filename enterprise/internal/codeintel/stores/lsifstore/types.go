@@ -69,20 +69,15 @@ type DiagnosticData struct {
 	EndCharacter   int // 0-indexed, inclusive
 }
 
+// TODO(sqs): when the schema for this settles, inline the fields instead of referring to the
+// external lsif-protocol package's type definitions, so that the persisted data format is
+// explicit and less likely to be accidentally changed.
 type SymbolData struct {
-	Type   string
-	Text   string
-	Detail string
-	Kind   protocol.SymbolKind
-	Tags   []protocol.SymbolTag
-
-	Path      string // file path for the range and fullRange
-	Range     Range
-	FullRange Range
-
-	Children []SymbolData
-	ParentID ID
-	TopLevel ID
+	ID uint64 // ID (unique within a bundle)
+	protocol.SymbolData
+	Locations []protocol.SymbolLocation
+	Parent    uint64        // ID of parent (if non-zero)
+	Monikers  []MonikerData // the monikers that refer to this symbol
 }
 
 // ResultChunkData represents a row of the resultChunk table. Each row is a subset
@@ -156,17 +151,11 @@ type PackageReference struct {
 
 // Symbol TODO(sqs) move this
 type Symbol struct {
-	Type   string
-	Text   string
-	Detail string
-	Kind   protocol.SymbolKind
-
-	Location     Location
-	FullLocation Location
-
-	Moniker MonikerData
-
-	Children []Symbol
+	DumpID int
+	protocol.SymbolData
+	Locations []protocol.SymbolLocation
+	Children  []Symbol
+	Monikers  []MonikerData // the monikers that refer to this symbol
 }
 
 // Location is an LSP-like location scoped to a dump.

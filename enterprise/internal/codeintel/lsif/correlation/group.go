@@ -194,7 +194,6 @@ func serializeDocument(state *State, documentID int) lsifstore.DocumentData {
 					Start: lsifstore.Position{Line: rangeData.Tag.FullRange.Start.Line, Character: rangeData.Tag.FullRange.Start.Character},
 					End:   lsifstore.Position{Line: rangeData.Tag.FullRange.End.Line, Character: rangeData.Tag.FullRange.End.Character},
 				},
-				ParentID: toID(int(documentSymbol.Parent)),
 			}
 
 			for _, child := range documentSymbol.Children {
@@ -203,37 +202,8 @@ func serializeDocument(state *State, documentID int) lsifstore.DocumentData {
 
 			return data
 		}
-		for _, documentSymbol := range state.DocumentSymbolResults[documentSymbolID].RangeBased {
+		for _, documentSymbol := range state.DocumentSymbolResults[documentSymbolID] {
 			data := fromRangeBased(documentSymbol)
-			document.Symbols = append(document.Symbols, data)
-		}
-
-		var fromInline func(documentSymbol protocol.DocumentSymbol) lsifstore.SymbolData
-		fromInline = func(documentSymbol protocol.DocumentSymbol) lsifstore.SymbolData {
-			data := lsifstore.SymbolData{
-				Type:   "definition", // TODO(sqs): can we make this assumption?
-				Text:   documentSymbol.Name,
-				Detail: documentSymbol.Detail,
-				Kind:   documentSymbol.Kind,
-				Range: lsifstore.Range{
-					Start: lsifstore.Position{Line: documentSymbol.SelectionRange.Start.Line, Character: documentSymbol.SelectionRange.Start.Character},
-					End:   lsifstore.Position{Line: documentSymbol.SelectionRange.End.Line, Character: documentSymbol.SelectionRange.End.Character},
-				},
-				FullRange: lsifstore.Range{
-					Start: lsifstore.Position{Line: documentSymbol.Range.Start.Line, Character: documentSymbol.Range.Start.Character},
-					End:   lsifstore.Position{Line: documentSymbol.Range.End.Line, Character: documentSymbol.Range.End.Character},
-				},
-				ParentID: toID(int(documentSymbol.Parent)),
-			}
-
-			for _, child := range documentSymbol.Children {
-				data.Children = append(data.Children, fromInline(child))
-			}
-
-			return data
-		}
-		for _, documentSymbol := range state.DocumentSymbolResults[documentSymbolID].Inline {
-			data := fromInline(documentSymbol)
 			document.Symbols = append(document.Symbols, data)
 		}
 	})

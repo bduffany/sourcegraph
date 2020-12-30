@@ -50,5 +50,3 @@
 {"id": "50", "type": "edge", "label": "textDocument/diagnostic", "outV": "02", "inV": "49"}
 {"id": "51", "type": "vertex", "label": "documentSymbolResult", "result": [{"id": "07"}, {"id": "08", "children": [{"id": "09"}]}]}
 {"id": "52", "type": "edge", "label": "textDocument/documentSymbol", "outV": "02", "inV": "51"}
-{"id": "53", "type": "vertex", "label": "documentSymbolResult", "result": [{"name": "bar", "range": {"start": {"line": 1, "character": 2}, "end": {"line": 3, "character": 4}}}]}
-{"id": "54", "type": "edge", "label": "textDocument/documentSymbol", "outV": "03", "inV": "53"}

@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	protocol "github.com/sourcegraph/lsif-protocol"
-	"github.com/sourcegraph/lsif-protocol/reader"
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/bloomfilter"
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/lsif/datastructures"
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/lsif/lsif"
@@ -31,8 +30,10 @@ func TestGroupBundleData(t *testing.T) {
 				DefinitionResultID: 3001,
 				ReferenceResultID:  0,
 				Tag: &protocol.RangeSymbolTag{
-					Type:      "definition",
-					Text:      "foo",
+					Type: "definition",
+					SymbolData: protocol.SymbolData{
+						Text: "foo",
+					},
 					FullRange: &protocol.RangeData{}, // TODO(sqs): empty
 				},
 			},
@@ -226,9 +227,9 @@ func TestGroupBundleData(t *testing.T) {
 				},
 			},
 		},
-		DocumentSymbolResults: map[int]reader.SymbolResultList{
+		DocumentSymbolResults: map[int][]protocol.RangeBasedDocumentSymbol{
 			1001: {
-				RangeBased: []protocol.RangeBasedDocumentSymbol{{ID: 2001}},
+				{ID: 2001},
 			},
 		},
 		ImportedMonikers: datastructures.IDSetWith(4001),

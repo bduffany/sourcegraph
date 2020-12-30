@@ -116,10 +116,12 @@ func TestUnmarshalRange(t *testing.T) {
 		ReferenceResultID:  0,
 		HoverResultID:      0,
 		Tag: &protocol.RangeSymbolTag{
-			Type:   "definition",
-			Text:   "foo",
-			Detail: "bar",
-			Kind:   11,
+			Type: "definition",
+			SymbolData: protocol.SymbolData{
+				Text:   "foo",
+				Detail: "bar",
+				Kind:   11,
+			},
 			FullRange: &protocol.RangeData{
 				Start: protocol.Pos{Line: 1, Character: 0},
 				End:   protocol.Pos{Line: 3, Character: 7},

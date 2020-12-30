@@ -3,6 +3,7 @@ package lsifstore
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 	"strings"
 
@@ -443,51 +444,25 @@ func (s *Store) Symbols(ctx context.Context, bundleID int, prefix string, skip, 
 
 	const fakeTotal = 100 // TODO(sqs)
 
-	var symbols []Symbol
-	var symbolParentIDs []ID
-
-	// Read document symbols from each file in the given prefix.
-	paths, err := s.getPathsWithPrefix(ctx, bundleID, prefix)
+	symbolDataList, err := s.ReadSymbols(ctx, bundleID)
 	if err != nil {
-		return nil, 0, pkgerrors.Wrap(err, "db.getPathsWithPrefix")
+		return nil, 0, pkgerrors.Wrap(err, "store.ReadSymbols")
+	}
+	symbolDatas := make(map[uint64]SymbolData, len(symbolDataList))
+	for _, data := range symbolDataList {
+		symbolDatas[data.ID] = data
 	}
 
-	for _, path := range paths {
-		documentData, exists, err := s.getDocumentData(ctx, bundleID, path)
-		if err != nil {
-			return nil, 0, pkgerrors.Wrap(err, "db.getDocumentData")
-		}
-		if !exists {
-			return nil, 0, nil
-		}
-
-		var fromRawSymbol func(rawSymbol SymbolData) Symbol
-		fromRawSymbol = func(rawSymbol SymbolData) Symbol {
-			symbol := Symbol{
-				Type:   rawSymbol.Type,
-				Text:   rawSymbol.Text,
-				Detail: rawSymbol.Detail,
-				Kind:   rawSymbol.Kind,
-				Location: Location{
-					DumpID: bundleID,
-					Path:   path,
-					Range:  newRange(rawSymbol.Range.Start.Line, rawSymbol.Range.Start.Character, rawSymbol.Range.End.Line, rawSymbol.Range.End.Character),
-				},
-				FullLocation: Location{
-					DumpID: bundleID,
-					Path:   path,
-					Range:  newRange(rawSymbol.FullRange.Start.Line, rawSymbol.FullRange.Start.Character, rawSymbol.FullRange.End.Line, rawSymbol.FullRange.End.Character),
-				},
-			}
-			for _, child := range rawSymbol.Children {
-				symbol.Children = append(symbol.Children, fromRawSymbol(child))
-			}
-			return symbol
-		}
-		for _, rawSymbol := range documentData.Symbols {
-			symbols = append(symbols, fromRawSymbol(rawSymbol))
-			symbolParentIDs = append(symbolParentIDs, rawSymbol.ParentID)
-		}
+	// Construct the tree of symbols.
+	symbols := make(map[uint64]Symbol, len(symbolDataList))
+	childSeen := func(seenChild uint64) {
+		// Remove symbols when they are attached as children so we can determine which symbols
+		// are the roots.
+		delete(symbolDatas, seenChild)
+		delete(symbols, seenChild)
+	}
+	for _, data := range symbolDatas {
+		symbols[data.ID] = newSymbolFromData(data, bundleID, symbolDatas, childSeen)
 	}
 
 	// Try to associate a moniker with each symbol.
@@ -518,21 +493,22 @@ func (s *Store) Symbols(ctx context.Context, bundleID int, prefix string, skip, 
 
 			// Find the symbol(s) whose range is the same as this moniker's range. TODO(sqs): inefficient
 			for i := range symbols {
-				for _, loc := range row.Locations {
-					locRange := newRange(loc.StartLine, loc.StartCharacter, loc.EndLine, loc.EndCharacter)
-					if symbols[i].Location.Path == loc.URI && symbols[i].Location.Range == locRange {
-						symbols[i].Moniker = moniker
+				walkSymbolTree(&symbols[i], func(symbol *Symbol) {
+					if symbol.Moniker.Identifier != "" {
+						fmt.Printf("symbol %+v\n", symbol) // X1
 					}
-				}
+					for _, loc := range row.Locations {
+						locRange := newRange(loc.StartLine, loc.StartCharacter, loc.EndLine, loc.EndCharacter)
+						if symbol.Location.Path == loc.URI && symbol.Location.Range == locRange {
+							symbol.Moniker = moniker
+						}
+					}
+				})
 			}
 		}
 	}
 
 	// Attach parent symbols.
-	topLevelSymbols, err := s.ReadSymbols(ctx, bundleID)
-	if err != nil {
-		return nil, 0, pkgerrors.Wrap(err, "store.ReadSymbols")
-	}
 
 	var allSymbols []Symbol
 

@@ -1,7 +1,7 @@
 package correlation
 
 import (
-	"github.com/sourcegraph/lsif-protocol/reader"
+	protocol "github.com/sourcegraph/lsif-protocol"
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/lsif/datastructures"
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/lsif/lsif"
 )
@@ -19,7 +19,7 @@ type State struct {
 	MonikerData            map[int]lsif.Moniker
 	PackageInformationData map[int]lsif.PackageInformation
 	DiagnosticResults      map[int][]lsif.Diagnostic
-	DocumentSymbolResults  map[int]reader.SymbolResultList
+	DocumentSymbolResults  map[int][]protocol.RangeBasedDocumentSymbol
 	NextData               map[int]int                     // maps range/result sets related via next edges
 	ImportedMonikers       *datastructures.IDSet           // moniker ids that have kind "import"
 	ExportedMonikers       *datastructures.IDSet           // moniker ids that have kind "export"
@@ -43,7 +43,7 @@ func newState() *State {
 		MonikerData:            map[int]lsif.Moniker{},
 		PackageInformationData: map[int]lsif.PackageInformation{},
 		DiagnosticResults:      map[int][]lsif.Diagnostic{},
-		DocumentSymbolResults:  map[int]reader.SymbolResultList{},
+		DocumentSymbolResults:  map[int][]protocol.RangeBasedDocumentSymbol{},
 		NextData:               map[int]int{},
 		ImportedMonikers:       datastructures.NewIDSet(),
 		ExportedMonikers:       datastructures.NewIDSet(),

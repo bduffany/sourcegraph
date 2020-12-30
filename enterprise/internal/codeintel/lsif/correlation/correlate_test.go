@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	protocol "github.com/sourcegraph/lsif-protocol"
-	"github.com/sourcegraph/lsif-protocol/reader"
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/lsif/datastructures"
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/lsif/lsif"
 )
@@ -62,7 +61,9 @@ func TestCorrelate(t *testing.T) {
 				ReferenceResultID: 15,
 				Tag: &protocol.RangeSymbolTag{
 					Type: "definition",
-					Text: "foo",
+					SymbolData: protocol.SymbolData{
+						Text: "foo",
+					},
 					FullRange: &protocol.RangeData{
 						Start: protocol.Pos{Line: 1, Character: 2},
 						End:   protocol.Pos{Line: 3, Character: 4},
@@ -148,29 +149,10 @@ func TestCorrelate(t *testing.T) {
 				},
 			},
 		},
-		DocumentSymbolResults: map[int]reader.SymbolResultList{
+		DocumentSymbolResults: map[int][]protocol.RangeBasedDocumentSymbol{
 			51: {
-				RangeBased: []protocol.RangeBasedDocumentSymbol{
-					{ID: 7},
-					{ID: 8, Children: []protocol.RangeBasedDocumentSymbol{{ID: 9}}},
-				},
-			},
-			53: {
-				Inline: []protocol.DocumentSymbol{
-					{
-						Name: "bar",
-						Range: protocol.RangeData{
-							Start: protocol.Pos{
-								Line:      1,
-								Character: 2,
-							},
-							End: protocol.Pos{
-								Line:      3,
-								Character: 4,
-							},
-						},
-					},
-				},
+				{ID: 7},
+				{ID: 8, Children: []protocol.RangeBasedDocumentSymbol{{ID: 9}}},
 			},
 		},
 		NextData: map[int]int{
@@ -227,7 +209,7 @@ func TestCorrelateMetaDataRoot(t *testing.T) {
 		MonikerData:            map[int]lsif.Moniker{},
 		PackageInformationData: map[int]lsif.PackageInformation{},
 		DiagnosticResults:      map[int][]lsif.Diagnostic{},
-		DocumentSymbolResults:  map[int]reader.SymbolResultList{},
+		DocumentSymbolResults:  map[int][]protocol.RangeBasedDocumentSymbol{},
 		NextData:               map[int]int{},
 		ImportedMonikers:       datastructures.NewIDSet(),
 		ExportedMonikers:       datastructures.NewIDSet(),
@@ -269,7 +251,7 @@ func TestCorrelateMetaDataRootX(t *testing.T) {
 		MonikerData:            map[int]lsif.Moniker{},
 		PackageInformationData: map[int]lsif.PackageInformation{},
 		DiagnosticResults:      map[int][]lsif.Diagnostic{},
-		DocumentSymbolResults:  map[int]reader.SymbolResultList{},
+		DocumentSymbolResults:  map[int][]protocol.RangeBasedDocumentSymbol{},
 		NextData:               map[int]int{},
 		ImportedMonikers:       datastructures.NewIDSet(),
 		ExportedMonikers:       datastructures.NewIDSet(),
