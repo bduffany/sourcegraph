@@ -112,6 +112,7 @@ var vertexHandlers = map[string]func(state *wrappedState, element lsif.Element) 
 	"hoverResult":          correlateHoverResult,
 	"moniker":              correlateMoniker,
 	"packageInformation":   correlatePackageInformation,
+	"symbol":               correlateSymbol,
 	"diagnosticResult":     correlateDiagnosticResult,
 	"documentSymbolResult": correlateDocumentSymbolResult,
 }
@@ -144,6 +145,8 @@ var edgeHandlers = map[string]func(state *wrappedState, id int, edge lsif.Edge) 
 	"packageInformation":          correlatePackageInformationEdge,
 	"textDocument/diagnostic":     correlateDiagnosticEdge,
 	"textDocument/documentSymbol": correlateTextDocumentDocumentSymbolEdge,
+	"workspace/symbol":            correlateWorkspaceSymbolEdge,
+	"member":                      correlateMemberEdge,
 }
 
 // correlateElement maps a single edge element into the correlation state.
@@ -264,6 +267,16 @@ func correlatePackageInformation(state *wrappedState, element lsif.Element) erro
 	return nil
 }
 
+func correlateSymbol(state *wrappedState, element lsif.Element) error {
+	payload, ok := element.Payload.(protocol.Symbol)
+	if !ok {
+		return ErrUnexpectedPayload
+	}
+
+	state.SymbolData[element.ID] = payload
+	return nil
+}
+
 func correlateDiagnosticResult(state *wrappedState, element lsif.Element) error {
 	payload, ok := element.Payload.([]lsif.Diagnostic)
 	if !ok {
@@ -280,6 +293,8 @@ func correlateDocumentSymbolResult(state *wrappedState, element lsif.Element) er
 	if !ok {
 		return ErrUnexpectedPayload
 	}
+
+	// TODO(sqs): validate that IDs and child IDs are all correct
 
 	state.DocumentSymbolResults[element.ID] = payload
 	return nil
@@ -473,5 +488,31 @@ func correlateTextDocumentDocumentSymbolEdge(state *wrappedState, id int, edge l
 	}
 
 	state.DocumentSymbols.SetAdd(edge.OutV, edge.InV)
+	return nil
+}
+
+func correlateWorkspaceSymbolEdge(state *wrappedState, id int, edge lsif.Edge) error {
+	// TODO(sqs): can't validate that OutV is a project vertex because we don't track projects yet
+	for _, inV := range edge.InVs {
+		if _, ok := state.SymbolData[inV]; !ok {
+			return malformedDump(id, inV, "symbol")
+		}
+		state.WorkspaceSymbols.Add(inV)
+	}
+
+	return nil
+}
+
+func correlateMemberEdge(state *wrappedState, id int, edge lsif.Edge) error {
+	if _, ok := state.SymbolData[edge.OutV]; !ok {
+		return malformedDump(id, edge.OutV, "symbol")
+	}
+
+	for _, inV := range edge.InVs {
+		if _, ok := state.SymbolData[inV]; !ok {
+			return malformedDump(id, inV, "symbol")
+		}
+		state.Members.SetAdd(edge.OutV, inV)
+	}
 	return nil
 }

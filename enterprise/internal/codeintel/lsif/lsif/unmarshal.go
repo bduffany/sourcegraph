@@ -124,6 +124,7 @@ var vertexUnmarshalers = map[string]func(interner *Interner, line []byte) (inter
 	"hoverResult":          unmarshalHover,
 	"moniker":              unmarshalMoniker,
 	"packageInformation":   unmarshalPackageInformation,
+	"symbol":               reader.UnmarshalSymbol,
 	"diagnosticResult":     unmarshalDiagnosticResult,
 	"documentSymbolResult": reader.UnmarshalDocumentSymbolResult,
 }

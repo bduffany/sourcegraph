@@ -18,6 +18,7 @@ type State struct {
 	HoverData              map[int]string
 	MonikerData            map[int]lsif.Moniker
 	PackageInformationData map[int]lsif.PackageInformation
+	SymbolData             map[int]protocol.Symbol // TODO(sqs): use type w/o embedded Vertex
 	DiagnosticResults      map[int][]lsif.Diagnostic
 	DocumentSymbolResults  map[int][]protocol.RangeBasedDocumentSymbol
 	NextData               map[int]int                     // maps range/result sets related via next edges
@@ -29,6 +30,8 @@ type State struct {
 	Contains               *datastructures.DefaultIDSetMap // maps ranges to containing documents
 	Diagnostics            *datastructures.DefaultIDSetMap // maps diagnostics to their documents
 	DocumentSymbols        *datastructures.DefaultIDSetMap // maps document symbols to their documents
+	WorkspaceSymbols       *datastructures.IDSet           // root symbol ids
+	Members                *datastructures.DefaultIDSetMap // maps member symbols to containing symbols or projects
 }
 
 // newState create a new State with zero-valued map fields.
@@ -42,6 +45,7 @@ func newState() *State {
 		HoverData:              map[int]string{},
 		MonikerData:            map[int]lsif.Moniker{},
 		PackageInformationData: map[int]lsif.PackageInformation{},
+		SymbolData:             map[int]protocol.Symbol{},
 		DiagnosticResults:      map[int][]lsif.Diagnostic{},
 		DocumentSymbolResults:  map[int][]protocol.RangeBasedDocumentSymbol{},
 		NextData:               map[int]int{},
@@ -53,5 +57,7 @@ func newState() *State {
 		Contains:               datastructures.NewDefaultIDSetMap(),
 		Diagnostics:            datastructures.NewDefaultIDSetMap(),
 		DocumentSymbols:        datastructures.NewDefaultIDSetMap(),
+		WorkspaceSymbols:       datastructures.NewIDSet(),
+		Members:                datastructures.NewDefaultIDSetMap(),
 	}
 }

@@ -389,11 +389,17 @@ func TestGroupBundleData(t *testing.T) {
 			},
 			Symbols: []lsifstore.SymbolData{
 				{
-					Type: "definition",
-					Text: "foo",
-					Range: lsifstore.Range{
-						Start: lsifstore.Position{Line: 1, Character: 2},
-						End:   lsifstore.Position{Line: 3, Character: 4},
+					SymbolData: protocol.SymbolData{
+						Text: "foo",
+					},
+					Locations: []protocol.SymbolLocation{
+						{
+							URI: "TODO(sqs)",
+							Range: &protocol.RangeData{
+								Start: protocol.Pos{Line: 1, Character: 2},
+								End:   protocol.Pos{Line: 3, Character: 4},
+							},
+						},
 					},
 				},
 			},

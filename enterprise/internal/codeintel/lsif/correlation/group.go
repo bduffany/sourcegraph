@@ -175,39 +175,6 @@ func serializeDocument(state *State, documentID int) lsifstore.DocumentData {
 		}
 	})
 
-	state.DocumentSymbols.SetEach(documentID, func(documentSymbolID int) {
-		var fromRangeBased func(documentSymbol protocol.RangeBasedDocumentSymbol) lsifstore.SymbolData
-		fromRangeBased = func(documentSymbol protocol.RangeBasedDocumentSymbol) lsifstore.SymbolData {
-			rangeID := int(documentSymbol.ID)
-			rangeData := state.RangeData[rangeID]
-
-			data := lsifstore.SymbolData{
-				Type:   rangeData.Tag.Type,
-				Text:   rangeData.Tag.Text,
-				Detail: rangeData.Tag.Detail,
-				Kind:   rangeData.Tag.Kind,
-				Range: lsifstore.Range{
-					Start: lsifstore.Position{Line: rangeData.StartLine, Character: rangeData.StartCharacter},
-					End:   lsifstore.Position{Line: rangeData.EndLine, Character: rangeData.EndCharacter},
-				},
-				FullRange: lsifstore.Range{
-					Start: lsifstore.Position{Line: rangeData.Tag.FullRange.Start.Line, Character: rangeData.Tag.FullRange.Start.Character},
-					End:   lsifstore.Position{Line: rangeData.Tag.FullRange.End.Line, Character: rangeData.Tag.FullRange.End.Character},
-				},
-			}
-
-			for _, child := range documentSymbol.Children {
-				data.Children = append(data.Children, fromRangeBased(child))
-			}
-
-			return data
-		}
-		for _, documentSymbol := range state.DocumentSymbolResults[documentSymbolID] {
-			data := fromRangeBased(documentSymbol)
-			document.Symbols = append(document.Symbols, data)
-		}
-	})
-
 	return document
 }
 
@@ -423,20 +390,69 @@ func gatherPackageReferences(state *State, dumpID int) ([]lsifstore.PackageRefer
 }
 
 func gatherSymbols(state *State, dumpID int) []lsifstore.SymbolData {
-	var symbols []lsifstore.SymbolData
+	byID := make(map[int]*lsifstore.SymbolData, len(state.SymbolData))
 
-	// TODO(sqs): just gather "package" symbols for now because all other symbols are already
-	// reachable via a document.
-	for rangeID, rng := range state.RangeData {
-		if rng.Tag != nil && rng.Tag.FullRange != nil && rng.Tag.FullRange.Start == (protocol.Pos{}) && rng.Tag.FullRange.End == (protocol.Pos{}) {
-			symbols = append(symbols, lsifstore.SymbolData{
-				Type:     rng.Tag.Type,
-				Text:     rng.Tag.Text,
-				Detail:   rng.Tag.Detail,
-				Kind:     rng.Tag.Kind,
-				TopLevel: toID(rangeID),
-			})
+	// Gather symbols defined directly on ranges.
+	for id, rng := range state.RangeData {
+		if rng.Tag != nil && (rng.Tag.Type == "definition" || rng.Tag.Type == "declaration") {
+			byID[id] = &lsifstore.SymbolData{
+				ID: uint64(id),
+				SymbolData: protocol.SymbolData{
+					Text:   rng.Tag.Text,
+					Detail: rng.Tag.Detail,
+					Kind:   rng.Tag.Kind,
+				},
+				Locations: []protocol.SymbolLocation{
+					{
+						URI: "TODO(sqs)",
+						Range: &protocol.RangeData{
+							Start: protocol.Pos{Line: rng.StartLine, Character: rng.StartCharacter},
+							End:   protocol.Pos{Line: rng.EndLine, Character: rng.EndCharacter},
+						},
+						FullRange: protocol.RangeData{
+							Start: protocol.Pos{Line: rng.Tag.FullRange.Start.Line, Character: rng.Tag.FullRange.Start.Character},
+							End:   protocol.Pos{Line: rng.Tag.FullRange.End.Line, Character: rng.Tag.FullRange.End.Character},
+						},
+					},
+				},
+			}
 		}
+	}
+
+	// Gather symbols defined by symbol vertices.
+	for id, symbol := range state.SymbolData {
+		byID[id] = &lsifstore.SymbolData{
+			ID:         uint64(id),
+			SymbolData: symbol.SymbolData,
+			Locations:  symbol.Locations,
+		}
+	}
+
+	// Set children from documentSymbolResults.
+	for _, results := range state.DocumentSymbolResults {
+		// TODO(sqs): determine document ID
+		for _, result := range results {
+			symbol, ok := byID[int(result.ID)]
+			if !ok {
+				panic("symbol not found") // TODO(sqs): remove once we validate these in correlateDocumentSymbolResult
+			}
+			for _, child := range result.Children {
+				symbol.Children = append(symbol.Children, child.ID)
+			}
+		}
+	}
+
+	// Set children from member edges.
+	state.Members.Each(func(parent int, children *datastructures.IDSet) {
+		symbol := byID[parent]
+		children.Each(func(child int) {
+			symbol.Children = append(symbol.Children, uint64(child))
+		})
+	})
+
+	symbols := make([]lsifstore.SymbolData, 0, len(byID))
+	for _, symbol := range byID {
+		symbols = append(symbols, *symbol)
 	}
 
 	return symbols
