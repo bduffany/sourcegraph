@@ -76,7 +76,7 @@ type SymbolData struct {
 	ID uint64 // ID (unique within a bundle)
 	protocol.SymbolData
 	Locations []protocol.SymbolLocation
-	Parent    uint64        // ID of parent (if non-zero)
+	Children  []uint64      // ID of children
 	Monikers  []MonikerData // the monikers that refer to this symbol
 }
 

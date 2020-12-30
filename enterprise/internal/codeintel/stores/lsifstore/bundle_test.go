@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	protocol "github.com/sourcegraph/lsif-protocol"
 	"github.com/sourcegraph/sourcegraph/internal/db/dbconn"
 	"github.com/sourcegraph/sourcegraph/internal/db/dbtesting"
 	"github.com/sourcegraph/sourcegraph/internal/observation"
@@ -371,10 +372,13 @@ func TestDatabaseSymbols(t *testing.T) {
 		// Filter down the actual list to a single symbol that we test against.
 		const testMonikerIdentifier = "github.com/sourcegraph/lsif-go/protocol:ToolInfo"
 		var actual *Symbol
+	outer:
 		for _, symbol := range actualList {
-			if symbol.Moniker.Identifier == testMonikerIdentifier {
-				actual = &symbol
-				break
+			for _, moniker := range symbol.Monikers {
+				if moniker.Identifier == testMonikerIdentifier {
+					actual = &symbol
+					break outer
+				}
 			}
 		}
 		if actual == nil {
@@ -382,29 +386,30 @@ func TestDatabaseSymbols(t *testing.T) {
 		}
 
 		expected := Symbol{
-			Type: "definition",
-			Text: "ToolInfo",
-			Kind: 11,
-			Location: Location{
-				DumpID: testBundleID,
-				Path:   "protocol/protocol.go",
-				Range: Range{
-					Start: Position{Line: 66, Character: 5},
-					End:   Position{Line: 66, Character: 13},
+			DumpID: testBundleID,
+			SymbolData: protocol.SymbolData{
+				Text: "ToolInfo",
+				Kind: 11,
+			},
+			Locations: []protocol.SymbolLocation{
+				{
+					URI: "protocol/protocol.go",
+					Range: &protocol.RangeData{
+						Start: protocol.Pos{Line: 66, Character: 5},
+						End:   protocol.Pos{Line: 66, Character: 13},
+					},
+					FullRange: protocol.RangeData{
+						Start: protocol.Pos{Line: 66, Character: 0},
+						End:   protocol.Pos{Line: 73, Character: 1},
+					},
 				},
 			},
-			FullLocation: Location{
-				DumpID: testBundleID,
-				Path:   "protocol/protocol.go",
-				Range: Range{
-					Start: Position{Line: 66, Character: 0},
-					End:   Position{Line: 73, Character: 1},
+			Monikers: []MonikerData{
+				{
+					Kind:       "export",
+					Scheme:     "gomod",
+					Identifier: testMonikerIdentifier,
 				},
-			},
-			Moniker: MonikerData{
-				Kind:       "export",
-				Scheme:     "gomod",
-				Identifier: testMonikerIdentifier,
 			},
 		}
 		if diff := cmp.Diff(expected, *actual); diff != "" {

@@ -3,7 +3,6 @@ package lsifstore
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sort"
 	"strings"
 
@@ -444,105 +443,25 @@ func (s *Store) Symbols(ctx context.Context, bundleID int, prefix string, skip, 
 
 	const fakeTotal = 100 // TODO(sqs)
 
-	symbolDataList, err := s.ReadSymbols(ctx, bundleID)
+	symbolDatas, err := s.ReadSymbols(ctx, bundleID)
 	if err != nil {
 		return nil, 0, pkgerrors.Wrap(err, "store.ReadSymbols")
 	}
-	symbolDatas := make(map[uint64]SymbolData, len(symbolDataList))
-	for _, data := range symbolDataList {
-		symbolDatas[data.ID] = data
-	}
 
-	// Construct the tree of symbols.
-	symbols := make(map[uint64]Symbol, len(symbolDataList))
-	childSeen := func(seenChild uint64) {
-		// Remove symbols when they are attached as children so we can determine which symbols
-		// are the roots.
-		delete(symbolDatas, seenChild)
-		delete(symbols, seenChild)
-	}
-	for _, data := range symbolDatas {
-		symbols[data.ID] = newSymbolFromData(data, bundleID, symbolDatas, childSeen)
-	}
+	rootSymbols := buildSymbolTree(symbolDatas, bundleID)
 
 	// Try to associate a moniker with each symbol.
-	{
-		rows, err := s.readMonikerLocations(ctx, bundleID, "definitions", skip, take)
-		if err != nil {
-			return nil, 0, pkgerrors.Wrap(err, "store.ReadDefinitions")
-		}
-
-		for _, row := range rows {
-			matchesPrefix := false
-			for _, loc := range row.Locations {
-				// TODO(sqs): more precise has-prefix taking into account slashes etc
-				if strings.HasPrefix(loc.URI, prefix) {
-					matchesPrefix = true
-					break
-				}
-			}
-			if !matchesPrefix {
-				continue
-			}
-
-			moniker := MonikerData{
-				Kind:       "export",
-				Scheme:     row.Scheme,
-				Identifier: row.Identifier,
-			}
-
-			// Find the symbol(s) whose range is the same as this moniker's range. TODO(sqs): inefficient
-			for i := range symbols {
-				walkSymbolTree(&symbols[i], func(symbol *Symbol) {
-					if symbol.Moniker.Identifier != "" {
-						fmt.Printf("symbol %+v\n", symbol) // X1
-					}
-					for _, loc := range row.Locations {
-						locRange := newRange(loc.StartLine, loc.StartCharacter, loc.EndLine, loc.EndCharacter)
-						if symbol.Location.Path == loc.URI && symbol.Location.Range == locRange {
-							symbol.Moniker = moniker
-						}
-					}
-				})
-			}
-		}
+	allMonikers, err := s.readMonikerLocations(ctx, bundleID, "definitions", skip, take)
+	if err != nil {
+		return nil, 0, pkgerrors.Wrap(err, "store.ReadDefinitions")
+	}
+	for i := range rootSymbols {
+		walkSymbolTree(&rootSymbols[i], func(symbol *Symbol) {
+			associateMoniker(symbol, allMonikers)
+		})
 	}
 
-	// Attach parent symbols.
-
-	var allSymbols []Symbol
-
-	topLevelSymbolsByID := make(map[ID]*Symbol, len(topLevelSymbols))
-	for _, s := range topLevelSymbols {
-		s2 := &Symbol{
-			Type:   s.Type,
-			Text:   s.Text,
-			Detail: s.Detail,
-			Kind:   s.Kind,
-		}
-		topLevelSymbolsByID[s.TopLevel] = s2
-	}
-
-	for i, symbol := range symbols {
-		parentID := symbolParentIDs[i]
-		if parentID == "" {
-			allSymbols = append(allSymbols, symbol)
-			continue
-		}
-
-		parent, ok := topLevelSymbolsByID[parentID]
-		if !ok {
-			panic("no parent found: " + parentID)
-		}
-
-		parent.Children = append(parent.Children, symbol)
-	}
-
-	for _, ts := range topLevelSymbolsByID {
-		allSymbols = append(allSymbols, *ts)
-	}
-
-	return allSymbols, fakeTotal, nil
+	return rootSymbols, fakeTotal, nil
 }
 
 // hover returns the hover text locations for the given range.
