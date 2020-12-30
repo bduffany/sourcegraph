@@ -509,8 +509,14 @@ func correlateMemberEdge(state *wrappedState, id int, edge lsif.Edge) error {
 	}
 
 	for _, inV := range edge.InVs {
-		if _, ok := state.SymbolData[inV]; !ok {
-			return malformedDump(id, inV, "symbol")
+		// Check that the edge points to a symbol.
+		_, ok := state.SymbolData[inV]
+		if !ok {
+			_, ok = state.RangeData[inV]
+		}
+		// TODO(sqs): also allow pointing to documentSymbolResult
+		if !ok {
+			return malformedDump(id, inV, "symbol or range")
 		}
 		state.Members.SetAdd(edge.OutV, inV)
 	}

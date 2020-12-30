@@ -135,6 +135,22 @@ func TestCorrelate(t *testing.T) {
 			22: {Name: "pkg A", Version: "v0.1.0"},
 			23: {Name: "pkg B", Version: "v1.2.3"},
 		},
+		SymbolData: map[int]protocol.Symbol{
+			53: {
+				SymbolData: protocol.SymbolData{Text: "foo", Kind: 4},
+				Locations: []protocol.SymbolLocation{
+					{
+						URI:       "file:///test/root/foo.go",
+						Range:     &protocol.RangeData{Start: protocol.Pos{Character: 8}, End: protocol.Pos{Character: 11}},
+						FullRange: protocol.RangeData{End: protocol.Pos{Line: 3, Character: 9}},
+					},
+					{
+						URI:       "file:///test/root/bar.go",
+						FullRange: protocol.RangeData{End: protocol.Pos{Line: 3, Character: 11}},
+					},
+				},
+			},
+		},
 		DiagnosticResults: map[int][]lsif.Diagnostic{
 			49: {
 				{
@@ -176,7 +192,11 @@ func TestCorrelate(t *testing.T) {
 		Diagnostics: datastructures.DefaultIDSetMapWith(map[int]*datastructures.IDSet{
 			2: datastructures.IDSetWith(49),
 		}),
-		DocumentSymbols: datastructures.NewDefaultIDSetMap(), // TODO(sqs): can we remove this field from the struct definition?
+		DocumentSymbols:  datastructures.NewDefaultIDSetMap(),
+		WorkspaceSymbols: datastructures.IDSetWith(53),
+		Members:          datastructures.DefaultIDSetMapWith(map[int]*datastructures.IDSet{
+			// TODO(sqs)
+		}),
 	}
 
 	if diff := cmp.Diff(expectedState, state, datastructures.Comparers...); diff != "" {
@@ -208,6 +228,7 @@ func TestCorrelateMetaDataRoot(t *testing.T) {
 		HoverData:              map[int]string{},
 		MonikerData:            map[int]lsif.Moniker{},
 		PackageInformationData: map[int]lsif.PackageInformation{},
+		SymbolData:             map[int]protocol.Symbol{},
 		DiagnosticResults:      map[int][]lsif.Diagnostic{},
 		DocumentSymbolResults:  map[int][]protocol.RangeBasedDocumentSymbol{},
 		NextData:               map[int]int{},
@@ -219,6 +240,8 @@ func TestCorrelateMetaDataRoot(t *testing.T) {
 		Monikers:               datastructures.NewDefaultIDSetMap(),
 		Diagnostics:            datastructures.NewDefaultIDSetMap(),
 		DocumentSymbols:        datastructures.NewDefaultIDSetMap(),
+		WorkspaceSymbols:       datastructures.NewIDSet(),
+		Members:                datastructures.NewDefaultIDSetMap(),
 	}
 
 	if diff := cmp.Diff(expectedState, state, datastructures.Comparers...); diff != "" {
@@ -250,6 +273,7 @@ func TestCorrelateMetaDataRootX(t *testing.T) {
 		HoverData:              map[int]string{},
 		MonikerData:            map[int]lsif.Moniker{},
 		PackageInformationData: map[int]lsif.PackageInformation{},
+		SymbolData:             map[int]protocol.Symbol{},
 		DiagnosticResults:      map[int][]lsif.Diagnostic{},
 		DocumentSymbolResults:  map[int][]protocol.RangeBasedDocumentSymbol{},
 		NextData:               map[int]int{},
@@ -261,6 +285,8 @@ func TestCorrelateMetaDataRootX(t *testing.T) {
 		Monikers:               datastructures.NewDefaultIDSetMap(),
 		Diagnostics:            datastructures.NewDefaultIDSetMap(),
 		DocumentSymbols:        datastructures.NewDefaultIDSetMap(),
+		WorkspaceSymbols:       datastructures.NewIDSet(),
+		Members:                datastructures.NewDefaultIDSetMap(),
 	}
 
 	if diff := cmp.Diff(expectedState, state, datastructures.Comparers...); diff != "" {

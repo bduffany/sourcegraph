@@ -18,7 +18,6 @@ type DocumentData struct {
 	Monikers           map[ID]MonikerData
 	PackageInformation map[ID]PackageInformationData
 	Diagnostics        []DiagnosticData
-	Symbols            []SymbolData
 }
 
 // RangeData represents a range vertex within an index. It contains the same relevant

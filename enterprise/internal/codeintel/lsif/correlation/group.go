@@ -115,7 +115,6 @@ func serializeDocument(state *State, documentID int) lsifstore.DocumentData {
 		Monikers:           map[lsifstore.ID]lsifstore.MonikerData{},
 		PackageInformation: map[lsifstore.ID]lsifstore.PackageInformationData{},
 		Diagnostics:        make([]lsifstore.DiagnosticData, 0, state.Diagnostics.SetLen(documentID)),
-		Symbols:            make([]lsifstore.SymbolData, 0, state.DocumentSymbols.SetLen(documentID)),
 	}
 
 	state.Contains.SetEach(documentID, func(rangeID int) {

@@ -1,4 +1,5 @@
 {"id": "01", "type": "vertex", "label": "metaData", "version": "0.4.3", "projectRoot": "file:///test/"}
+{"id": "101","type": "vertex", "label": "project", "kind": "go" }
 {"id": "02", "type": "vertex", "label": "document", "uri": "file:///test/root/foo.go"}
 {"id": "03", "type": "vertex", "label": "document", "uri": "file:///test/root/bar.go"}
 {"id": "04", "type": "vertex", "label": "range", "start": {"line": 1, "character": 2}, "end": {"line": 3, "character": 4}}
@@ -50,3 +51,6 @@
 {"id": "50", "type": "edge", "label": "textDocument/diagnostic", "outV": "02", "inV": "49"}
 {"id": "51", "type": "vertex", "label": "documentSymbolResult", "result": [{"id": "07"}, {"id": "08", "children": [{"id": "09"}]}]}
 {"id": "52", "type": "edge", "label": "textDocument/documentSymbol", "outV": "02", "inV": "51"}
+{"id": "53", "type": "vertex", "label": "symbol", "text": "foo", "kind": 4, "locations": [{"uri": "file:///test/root/foo.go", "fullRange": {"start": {"line": 0, "character": 0}, "end": {"line": 3, "character": 9}}, "range": { "start": {"line": 0, "character": 8}, "end": {"line": 0, "character": 11}}}, {"uri": "file:///test/root/bar.go", "fullRange": {"start": {"line": 0, "character": 0}, "end": {"line": 3, "character": 11}}, "selectionRange": {"start": {"line": 0, "character": 8}, "end": {"line": 0, "character": 11}}}]}
+{"id": "54", "type": "edge", "label": "workspace/symbol", "outV": "101", "inVs": ["53"]}
+{"id": "55", "type": "edge", "label": "member", "outV": "53", "inVs": ["07"]}

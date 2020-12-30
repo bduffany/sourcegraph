@@ -227,6 +227,23 @@ func TestGroupBundleData(t *testing.T) {
 				},
 			},
 		},
+		SymbolData: map[int]protocol.Symbol{
+			7001: {
+				SymbolData: protocol.SymbolData{Text: "foo", Kind: 4},
+				Locations: []protocol.SymbolLocation{
+					{
+						URI:       "file:///test/root/foo.go",
+						Range:     &protocol.RangeData{Start: protocol.Pos{Character: 8}, End: protocol.Pos{Character: 11}},
+						FullRange: protocol.RangeData{End: protocol.Pos{Line: 3, Character: 9}},
+					},
+					{
+						URI:       "file:///test/root/bar.go",
+						Range:     &protocol.RangeData{Start: protocol.Pos{Character: 8}, End: protocol.Pos{Character: 11}},
+						FullRange: protocol.RangeData{End: protocol.Pos{Line: 3, Character: 11}},
+					},
+				},
+			},
+		},
 		DocumentSymbolResults: map[int][]protocol.RangeBasedDocumentSymbol{
 			1001: {
 				{ID: 2001},
@@ -249,6 +266,10 @@ func TestGroupBundleData(t *testing.T) {
 		}),
 		DocumentSymbols: datastructures.DefaultIDSetMapWith(map[int]*datastructures.IDSet{
 			1001: datastructures.IDSetWith(1001),
+		}),
+		WorkspaceSymbols: datastructures.IDSetWith(7001),
+		Members: datastructures.DefaultIDSetMapWith(map[int]*datastructures.IDSet{
+			7001: datastructures.IDSetWith(2001),
 		}),
 	}
 
@@ -387,22 +408,6 @@ func TestGroupBundleData(t *testing.T) {
 					EndCharacter:   24,
 				},
 			},
-			Symbols: []lsifstore.SymbolData{
-				{
-					SymbolData: protocol.SymbolData{
-						Text: "foo",
-					},
-					Locations: []protocol.SymbolLocation{
-						{
-							URI: "TODO(sqs)",
-							Range: &protocol.RangeData{
-								Start: protocol.Pos{Line: 1, Character: 2},
-								End:   protocol.Pos{Line: 3, Character: 4},
-							},
-						},
-					},
-				},
-			},
 		},
 		"bar.go": {
 			Ranges: map[lsifstore.ID]lsifstore.RangeData{
@@ -462,7 +467,6 @@ func TestGroupBundleData(t *testing.T) {
 					EndCharacter:   44,
 				},
 			},
-			Symbols: []lsifstore.SymbolData{},
 		},
 		"baz.go": {
 			Ranges: map[lsifstore.ID]lsifstore.RangeData{
@@ -501,7 +505,6 @@ func TestGroupBundleData(t *testing.T) {
 			Monikers:           map[lsifstore.ID]lsifstore.MonikerData{},
 			PackageInformation: map[lsifstore.ID]lsifstore.PackageInformationData{},
 			Diagnostics:        []lsifstore.DiagnosticData{},
-			Symbols:            []lsifstore.SymbolData{},
 		},
 	}
 	if diff := cmp.Diff(expectedDocumentData, documents, datastructures.Comparers...); diff != "" {
@@ -627,6 +630,58 @@ func TestGroupBundleData(t *testing.T) {
 	if diff := cmp.Diff(expectedReferences, references); diff != "" {
 		t.Errorf("unexpected references (-want +got):\n%s", diff)
 	}
+
+	symbols := actualBundleData.Symbols
+	sortSymbols(symbols)
+
+	expectedSymbols := []lsifstore.SymbolData{
+		{
+			ID:         2001,
+			SymbolData: protocol.SymbolData{Text: "foo"},
+			Locations: []protocol.SymbolLocation{
+				{
+					URI: "TODO(sqs)",
+					Range: &protocol.RangeData{
+						Start: protocol.Pos{Line: 1, Character: 2},
+						End:   protocol.Pos{Line: 3, Character: 4},
+					},
+				},
+			},
+		},
+		{
+			ID:         7001,
+			SymbolData: protocol.SymbolData{Text: "foo", Kind: 4},
+			Locations: []protocol.SymbolLocation{
+				{
+					URI: "file:///test/root/foo.go",
+					Range: &protocol.RangeData{
+						Start: protocol.Pos{Line: 0, Character: 8},
+						End:   protocol.Pos{Line: 0, Character: 11},
+					},
+					FullRange: protocol.RangeData{
+						Start: protocol.Pos{Line: 0, Character: 0},
+						End:   protocol.Pos{Line: 3, Character: 9},
+					},
+				},
+				{
+					URI: "file:///test/root/bar.go",
+					Range: &protocol.RangeData{
+						Start: protocol.Pos{Line: 0, Character: 8},
+						End:   protocol.Pos{Line: 0, Character: 11},
+					},
+					FullRange: protocol.RangeData{
+						Start: protocol.Pos{Line: 0, Character: 0},
+						End:   protocol.Pos{Line: 3, Character: 11},
+					},
+				},
+			},
+			Children: []uint64{2001},
+		},
+	}
+
+	if diff := cmp.Diff(expectedSymbols, symbols); diff != "" {
+		t.Errorf("unexpected symbols (-want +got):\n%s", diff)
+	}
 }
 
 //
@@ -671,10 +726,17 @@ func sortMonikerLocations(monikerLocations []lsifstore.MonikerLocations) {
 
 func sortLocations(locations []lsifstore.LocationData) {
 	sort.Slice(locations, func(i, j int) bool {
+		// TODO(sqs): should not use strings.Compare, just use "<" - and same for all other sortXyzs
 		if cmp := strings.Compare(locations[i].URI, locations[j].URI); cmp != 0 {
 			return cmp < 0
 		}
 
 		return locations[i].StartLine < locations[j].StartLine
+	})
+}
+
+func sortSymbols(symbols []lsifstore.SymbolData) {
+	sort.Slice(symbols, func(i, j int) bool {
+		return symbols[i].ID < symbols[j].ID
 	})
 }
