@@ -14,13 +14,15 @@ import {
     RepositoryExpSymbolsResult,
 } from '../../graphql-operations'
 import { RepoRevisionContainerContext } from '../../repo/RepoRevisionContainer'
-import { Link } from 'react-router-dom'
 import { ExpSymbolDetailGQLFragment, SymbolDetail } from './SymbolDetail'
 import { SettingsCascadeProps } from '../../../../shared/src/settings/settings'
+import { SymbolsSidebar } from './SymbolsSidebar'
+import { SymbolsContainerList } from './SymbolsContainerList'
 
 const RepositoryExpSymbolsGQLFragment = gql`
     fragment RepositoryExpSymbolsFields on ExpSymbol {
         text
+        detail
         monikers {
             identifier
         }
@@ -92,42 +94,9 @@ export const RepositorySymbolsPage: React.FunctionComponent<Props> = ({
 
     return data ? (
         <>
-            <ul className="sticky-top flex-column list-unstyled p-3" style={{ flex: '0 0 auto', overflow: 'auto' }}>
-                {data.map(symbol => (
-                    <li key={symbol.url} className="pb-1">
-                        <Link to={symbol.url}>{symbol.text}</Link>
-                        {symbol.children.length > 0 && (
-                            <ul className="list-unstyled pl-3">
-                                {symbol.children.map(childSymbol => (
-                                    <li key={childSymbol.url}>
-                                        <Link to={childSymbol.url}>{childSymbol.text}</Link>
-                                        {childSymbol.children.length > 0 && (
-                                            <ul className="list-unstyled pl-3">
-                                                {childSymbol.children.map(childChildSymbol => (
-                                                    <li key={childChildSymbol.url}>
-                                                        <Link to={childChildSymbol.url}>{childChildSymbol.text}</Link>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </li>
-                ))}
-            </ul>
-            <div style={{ overflow: 'auto' }}>
-                {data.map(symbol => (
-                    <section key={symbol.url} className="my-5">
-                        <SymbolDetail {...props} symbol={symbol} />
-                        {symbol.children.map(childSymbol => (
-                            <SymbolDetail {...props} symbol={childSymbol} />
-                        ))}
-                        <div className="pb-5" />
-                        <div className="pb-5" />
-                    </section>
-                ))}
+            <SymbolsSidebar data={data} />
+            <div style={{ overflow: 'auto' }} className="p-3">
+                <SymbolsContainerList symbols={data} />
             </div>
         </>
     ) : (

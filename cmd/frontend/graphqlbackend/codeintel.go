@@ -309,6 +309,7 @@ type SymbolConnectionResolver interface {
 
 type SymbolResolver interface {
 	Text() string
+	Detail() *string
 	Monikers() []MonikerResolver
 	Definitions(ctx context.Context) (LocationConnectionResolver, error)
 	References(ctx context.Context) (LocationConnectionResolver, error)

@@ -44,6 +44,8 @@ type ExpSymbol struct {
 
 func (r *ExpSymbol) Text() string { return r.sym.Text() }
 
+func (r *ExpSymbol) Detail() *string { return r.sym.Detail() }
+
 func (r *ExpSymbol) Monikers() []MonikerResolver { return r.sym.Monikers() }
 
 func (r *ExpSymbol) Definitions(ctx context.Context) (LocationConnectionResolver, error) {

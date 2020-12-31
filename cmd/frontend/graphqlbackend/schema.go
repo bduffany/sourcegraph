@@ -6213,6 +6213,7 @@ A symbol.
 """
 type ExpSymbol {
     text: String!
+    detail: String
 
     monikers: [Moniker!]!
 

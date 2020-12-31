@@ -324,9 +324,27 @@ func gatherMonikersLocations(ctx context.Context, state *State, data map[int]*da
 func gatherSymbols(ctx context.Context, state *State, dumpID int) chan lsifstore.SymbolData {
 	byID := make(map[int]*lsifstore.SymbolData, len(state.SymbolData))
 
+	// TODO(sqs): speed this operation up by (eg) adding a DocumentID field to RangeData or another
+	// map to State that's the reverse of (State).Contains?
+	getDocumentContainingRange := func(rangeID int) int {
+		var docID int
+		state.Contains.Each(func(key int, set *datastructures.IDSet) {
+			if set.Contains(rangeID) {
+				docID = key
+			}
+		})
+		if docID == 0 {
+			panic("docID is 0")
+		}
+		return docID
+	}
+
 	// Gather symbols defined directly on ranges.
 	for id, rng := range state.RangeData {
 		if rng.Tag != nil && (rng.Tag.Type == "definition" || rng.Tag.Type == "declaration") {
+			docID := getDocumentContainingRange(id)
+			uri := state.DocumentData[docID]
+
 			byID[id] = &lsifstore.SymbolData{
 				ID: uint64(id),
 				SymbolData: protocol.SymbolData{
@@ -336,7 +354,7 @@ func gatherSymbols(ctx context.Context, state *State, dumpID int) chan lsifstore
 				},
 				Locations: []protocol.SymbolLocation{
 					{
-						URI: "TODO(sqs)",
+						URI: uri,
 						Range: &protocol.RangeData{
 							Start: protocol.Pos{Line: rng.StartLine, Character: rng.StartCharacter},
 							End:   protocol.Pos{Line: rng.EndLine, Character: rng.EndCharacter},
@@ -364,12 +382,19 @@ func gatherSymbols(ctx context.Context, state *State, dumpID int) chan lsifstore
 	for _, results := range state.DocumentSymbolResults {
 		// TODO(sqs): determine document ID
 		for _, result := range results {
+			// TODO(sqs): remove this vallidation once we validate these in correlateDocumentSymbolResult
 			symbol, ok := byID[int(result.ID)]
 			if !ok {
-				panic("symbol not found") // TODO(sqs): remove once we validate these in correlateDocumentSymbolResult
+				panic("symbol not found")
 			}
+
+			symbolID := int(result.ID)
 			for _, child := range result.Children {
-				symbol.Children = append(symbol.Children, child.ID)
+				// Don't add duplicate children (when the child is specified both using a
+				// RangeBasedDocumentSymbol and a member edge).
+				if !state.Members.SetContains(symbolID, int(child.ID)) {
+					symbol.Children = append(symbol.Children, child.ID)
+				}
 			}
 		}
 	}
@@ -381,6 +406,18 @@ func gatherSymbols(ctx context.Context, state *State, dumpID int) chan lsifstore
 			symbol.Children = append(symbol.Children, uint64(child))
 		})
 	})
+
+	// Attach monikers.
+	for id, data := range byID {
+		state.Monikers.Get(id).Each(func(monikerID int) {
+			moniker := state.MonikerData[monikerID]
+			data.Monikers = append(data.Monikers, lsifstore.MonikerData{
+				Kind:       moniker.Kind,
+				Scheme:     moniker.Scheme,
+				Identifier: moniker.Identifier,
+			})
+		})
+	}
 
 	// TODO(sqs): parallelize the sending to this channel
 	ch := make(chan lsifstore.SymbolData)

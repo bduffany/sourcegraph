@@ -54,3 +54,4 @@
 {"id": "53", "type": "vertex", "label": "symbol", "text": "foo", "kind": 4, "locations": [{"uri": "file:///test/root/foo.go", "fullRange": {"start": {"line": 0, "character": 0}, "end": {"line": 3, "character": 9}}, "range": { "start": {"line": 0, "character": 8}, "end": {"line": 0, "character": 11}}}, {"uri": "file:///test/root/bar.go", "fullRange": {"start": {"line": 0, "character": 0}, "end": {"line": 3, "character": 11}}, "selectionRange": {"start": {"line": 0, "character": 8}, "end": {"line": 0, "character": 11}}}]}
 {"id": "54", "type": "edge", "label": "workspace/symbol", "outV": "101", "inVs": ["53"]}
 {"id": "55", "type": "edge", "label": "member", "outV": "53", "inVs": ["07"]}
+{"id": "56", "type": "edge", "label": "moniker", "outV": "53", "inV": "19"}

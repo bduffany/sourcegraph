@@ -30,6 +30,13 @@ func (r *SymbolResolver) Text() string {
 	return r.symbol.Text
 }
 
+func (r *SymbolResolver) Detail() *string {
+	if v := r.symbol.Detail; v != "" {
+		return &v
+	}
+	return nil
+}
+
 func (r *SymbolResolver) Monikers() []gql.MonikerResolver {
 	var monikers []gql.MonikerResolver
 	for _, m := range r.symbol.Monikers {

@@ -75,8 +75,8 @@ type SymbolData struct {
 	ID uint64 // ID (unique within a bundle)
 	protocol.SymbolData
 	Locations []protocol.SymbolLocation
-	Children  []uint64      // ID of children
 	Monikers  []MonikerData // the monikers that refer to this symbol
+	Children  []uint64      // ID of children
 }
 
 // ResultChunkData represents a row of the resultChunk table. Each row is a subset

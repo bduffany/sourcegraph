@@ -232,12 +232,12 @@ func TestGroupBundleData(t *testing.T) {
 				SymbolData: protocol.SymbolData{Text: "foo", Kind: 4},
 				Locations: []protocol.SymbolLocation{
 					{
-						URI:       "file:///test/root/foo.go",
+						URI:       "foo.go",
 						Range:     &protocol.RangeData{Start: protocol.Pos{Character: 8}, End: protocol.Pos{Character: 11}},
 						FullRange: protocol.RangeData{End: protocol.Pos{Line: 3, Character: 9}},
 					},
 					{
-						URI:       "file:///test/root/bar.go",
+						URI:       "bar.go",
 						Range:     &protocol.RangeData{Start: protocol.Pos{Character: 8}, End: protocol.Pos{Character: 11}},
 						FullRange: protocol.RangeData{End: protocol.Pos{Line: 3, Character: 11}},
 					},
@@ -259,6 +259,7 @@ func TestGroupBundleData(t *testing.T) {
 		Monikers: datastructures.DefaultIDSetMapWith(map[int]*datastructures.IDSet{
 			2001: datastructures.IDSetWith(4001, 4002),
 			2002: datastructures.IDSetWith(4003, 4004),
+			7001: datastructures.IDSetWith(4001),
 		}),
 		Diagnostics: datastructures.DefaultIDSetMapWith(map[int]*datastructures.IDSet{
 			1001: datastructures.IDSetWith(1001, 1002),
@@ -643,12 +644,16 @@ func TestGroupBundleData(t *testing.T) {
 			SymbolData: protocol.SymbolData{Text: "foo"},
 			Locations: []protocol.SymbolLocation{
 				{
-					URI: "TODO(sqs)",
+					URI: "foo.go",
 					Range: &protocol.RangeData{
 						Start: protocol.Pos{Line: 1, Character: 2},
 						End:   protocol.Pos{Line: 3, Character: 4},
 					},
 				},
+			},
+			Monikers: []lsifstore.MonikerData{
+				{Kind: "import", Scheme: "scheme A", Identifier: "ident A"},
+				{Kind: "import", Scheme: "scheme B", Identifier: "ident B"},
 			},
 		},
 		{
@@ -656,7 +661,7 @@ func TestGroupBundleData(t *testing.T) {
 			SymbolData: protocol.SymbolData{Text: "foo", Kind: 4},
 			Locations: []protocol.SymbolLocation{
 				{
-					URI: "file:///test/root/foo.go",
+					URI: "foo.go",
 					Range: &protocol.RangeData{
 						Start: protocol.Pos{Line: 0, Character: 8},
 						End:   protocol.Pos{Line: 0, Character: 11},
@@ -667,7 +672,7 @@ func TestGroupBundleData(t *testing.T) {
 					},
 				},
 				{
-					URI: "file:///test/root/bar.go",
+					URI: "bar.go",
 					Range: &protocol.RangeData{
 						Start: protocol.Pos{Line: 0, Character: 8},
 						End:   protocol.Pos{Line: 0, Character: 11},
@@ -677,6 +682,9 @@ func TestGroupBundleData(t *testing.T) {
 						End:   protocol.Pos{Line: 3, Character: 11},
 					},
 				},
+			},
+			Monikers: []lsifstore.MonikerData{
+				{Kind: "import", Scheme: "scheme A", Identifier: "ident A"},
 			},
 			Children: []uint64{2001},
 		},

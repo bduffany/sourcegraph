@@ -52,7 +52,7 @@ const queryRepositorySymbol = (
         map(data => {
             // eslint-disable-next-line unicorn/consistent-function-scoping
             const match = (sym: ExpSymbolDetailFields): boolean =>
-                sym.moniker.scheme === vars.scheme && sym.moniker.identifier === vars.identifier
+                sym.monikers.some(moniker => moniker.scheme === vars.scheme && moniker.identifier === vars.identifier)
             for (const node of data.node?.commit?.tree?.expSymbols?.nodes || []) {
                 if (match(node)) {
                     return node

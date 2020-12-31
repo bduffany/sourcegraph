@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"io/ioutil"
-	"log"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -23,8 +22,6 @@ func TestCorrelate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error correlating input: %s", err)
 	}
-
-	log.Println("TODO(sqs): add symbol monikers to test")
 
 	expectedState := &State{
 		LSIFVersion: "0.4.3",
@@ -191,6 +188,7 @@ func TestCorrelate(t *testing.T) {
 			9:  datastructures.IDSetWith(19),
 			10: datastructures.IDSetWith(20),
 			11: datastructures.IDSetWith(21),
+			53: datastructures.IDSetWith(19),
 		}),
 		Diagnostics: datastructures.DefaultIDSetMapWith(map[int]*datastructures.IDSet{
 			2: datastructures.IDSetWith(49),
