@@ -6214,7 +6214,7 @@ A symbol.
 type ExpSymbol {
     text: String!
 
-    moniker: Moniker!
+    monikers: [Moniker!]!
 
     hover: Hover
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io/ioutil"
+	"log"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -22,6 +23,8 @@ func TestCorrelate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error correlating input: %s", err)
 	}
+
+	log.Println("TODO(sqs): add symbol monikers to test")
 
 	expectedState := &State{
 		LSIFVersion: "0.4.3",

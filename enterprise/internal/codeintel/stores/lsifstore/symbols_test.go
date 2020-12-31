@@ -81,3 +81,14 @@ func TestBuildSymbolTree(t *testing.T) {
 		})
 	}
 }
+
+func findSymbolsMatching(roots []Symbol, match func(symbol *Symbol) bool) (matches []*Symbol) {
+	for i := range roots {
+		walkSymbolTree(&roots[i], func(symbol *Symbol) {
+			if match(symbol) {
+				matches = append(matches, symbol)
+			}
+		})
+	}
+	return matches
+}

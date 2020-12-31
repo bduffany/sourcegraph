@@ -366,26 +366,25 @@ func TestDatabaseSymbols(t *testing.T) {
 	populateTestStore(t)
 	store := NewStore(dbconn.Global, &observation.TestContext)
 
-	if actualList, totalCount, err := store.Symbols(context.Background(), testBundleID, "protocol/protocol.go", 0, 1000); err != nil {
-		t.Fatalf("unexpected error %s", err)
-	} else {
-		// Filter down the actual list to a single symbol that we test against.
-		const testMonikerIdentifier = "github.com/sourcegraph/lsif-go/protocol:ToolInfo"
-		var actual *Symbol
-	outer:
-		for _, symbol := range actualList {
-			for _, moniker := range symbol.Monikers {
-				if moniker.Identifier == testMonikerIdentifier {
-					actual = &symbol
-					break outer
-				}
+	actualList, totalCount, err := store.Symbols(context.Background(), testBundleID, "protocol/protocol.go", 0, 1000)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Filter down the actual list to a single symbol that we test against.
+	const testMonikerIdentifier = "github.com/sourcegraph/lsif-go/protocol:ToolInfo"
+
+	actual := findSymbolsMatching(actualList, func(symbol *Symbol) bool {
+		for _, m := range symbol.Monikers {
+			if m.Identifier == testMonikerIdentifier {
+				return true
 			}
 		}
-		if actual == nil {
-			t.Fatalf("symbol with moniker identifier %q not found in result", testMonikerIdentifier)
-		}
+		return false
+	})
 
-		expected := Symbol{
+	expected := []*Symbol{
+		{
 			DumpID: testBundleID,
 			SymbolData: protocol.SymbolData{
 				Text: "ToolInfo",
@@ -411,15 +410,15 @@ func TestDatabaseSymbols(t *testing.T) {
 					Identifier: testMonikerIdentifier,
 				},
 			},
-		}
-		if diff := cmp.Diff(expected, *actual); diff != "" {
-			t.Errorf("unexpected symbols (-want +got):\n%s", diff)
-		}
+		},
+	}
+	if diff := cmp.Diff(expected, actual); diff != "" {
+		t.Errorf("unexpected symbols (-want +got):\n%s", diff)
+	}
 
-		expectedTotalCount := 100
-		if totalCount != expectedTotalCount {
-			t.Errorf("unexpected symbol result total count. want=%d have=%d", expectedTotalCount, totalCount)
-		}
+	expectedTotalCount := 100
+	if totalCount != expectedTotalCount {
+		t.Errorf("unexpected symbol result total count. want=%d have=%d", expectedTotalCount, totalCount)
 	}
 }
 

@@ -17,7 +17,7 @@ export const ExpSymbolDetailGQLFragment = gql`
     fragment ExpSymbolDetailFields on ExpSymbol {
         text
         url
-        moniker {
+        monikers {
             kind
             scheme
             identifier

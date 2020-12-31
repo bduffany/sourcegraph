@@ -44,7 +44,7 @@ type ExpSymbol struct {
 
 func (r *ExpSymbol) Text() string { return r.sym.Text() }
 
-func (r *ExpSymbol) Moniker() MonikerResolver { return r.sym.Moniker() }
+func (r *ExpSymbol) Monikers() []MonikerResolver { return r.sym.Monikers() }
 
 func (r *ExpSymbol) Definitions(ctx context.Context) (LocationConnectionResolver, error) {
 	return r.sym.Definitions(ctx)
@@ -59,9 +59,11 @@ func (r *ExpSymbol) Hover(ctx context.Context) (HoverResolver, error) {
 }
 
 func (r *ExpSymbol) url(prefix string) string {
-	if r.sym.Moniker().Scheme() != "" {
-		return prefix + "/-/symbols/" + url.PathEscape(r.sym.Moniker().Scheme()) + "/" + strings.Replace(url.PathEscape(r.sym.Moniker().Identifier()), "%2F", "/", -1)
+	if len(r.sym.Monikers()) > 0 {
+		moniker := r.sym.Monikers()[0]
+		return prefix + "/-/symbols/" + url.PathEscape(moniker.Scheme()) + "/" + strings.Replace(url.PathEscape(moniker.Identifier()), "%2F", "/", -1)
 	}
+
 	path, line, end := r.sym.Location()
 	tree := *r.tree
 	tree.stat = fileInfo{path: path}

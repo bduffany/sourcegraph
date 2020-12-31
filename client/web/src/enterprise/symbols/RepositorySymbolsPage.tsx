@@ -21,7 +21,7 @@ import { SettingsCascadeProps } from '../../../../shared/src/settings/settings'
 const RepositoryExpSymbolsGQLFragment = gql`
     fragment RepositoryExpSymbolsFields on ExpSymbol {
         text
-        moniker {
+        monikers {
             identifier
         }
         url

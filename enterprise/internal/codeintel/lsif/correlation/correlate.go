@@ -424,6 +424,8 @@ func correlateMonikerEdge(state *wrappedState, id int, edge lsif.Edge) error {
 		state.Monikers.SetAdd(edge.OutV, edge.InV)
 	} else if _, ok := state.ResultSetData[edge.OutV]; ok {
 		state.Monikers.SetAdd(edge.OutV, edge.InV)
+	} else if _, ok := state.SymbolData[edge.OutV]; ok {
+		state.Monikers.SetAdd(edge.OutV, edge.InV)
 	} else {
 		return malformedDump(id, edge.OutV, "range", "resultSet")
 	}
@@ -504,19 +506,23 @@ func correlateWorkspaceSymbolEdge(state *wrappedState, id int, edge lsif.Edge) e
 }
 
 func correlateMemberEdge(state *wrappedState, id int, edge lsif.Edge) error {
-	if _, ok := state.SymbolData[edge.OutV]; !ok {
-		return malformedDump(id, edge.OutV, "symbol")
+	isSymbolOrRange := func(id int) bool {
+		// TODO(sqs): also allow pointing to documentSymbolResult
+		_, ok := state.SymbolData[id]
+		if !ok {
+			_, ok = state.RangeData[id]
+		}
+		return ok
+	}
+
+	if !isSymbolOrRange(edge.OutV) {
+		return malformedDump(id, edge.OutV, "range", "symbol")
 	}
 
 	for _, inV := range edge.InVs {
 		// Check that the edge points to a symbol.
-		_, ok := state.SymbolData[inV]
-		if !ok {
-			_, ok = state.RangeData[inV]
-		}
-		// TODO(sqs): also allow pointing to documentSymbolResult
-		if !ok {
-			return malformedDump(id, inV, "symbol or range")
+		if !isSymbolOrRange(inV) {
+			return malformedDump(id, inV, "range", "symbol")
 		}
 		state.Members.SetAdd(edge.OutV, inV)
 	}
