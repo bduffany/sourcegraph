@@ -18,6 +18,7 @@ import { SettingsCascadeProps } from '../../../../shared/src/settings/settings'
 import { ExpSymbolDetailGQLFragment, SymbolDetail } from './SymbolDetail'
 import { SymbolsAreaSidebarVisibilitySetterProps } from './SymbolsArea'
 import { SymbolsViewOptionsProps } from './useSymbolsViewOptions'
+import { LoadingSpinner } from '@sourcegraph/react-loading-spinner'
 
 const queryRepositorySymbol = (
     vars: RepositoryExpSymbolVariables & { scheme: string; identifier: string }
@@ -113,15 +114,11 @@ export const SymbolPage: React.FunctionComponent<Props> = ({
 
     useBreadcrumb(useMemo(() => ({ key: 'symbol', element: data?.text || '??' }), [data?.text]))
 
-    return (
-        <div className="container" style={{ overflow: 'auto' }}>
-            {data === null ? (
-                <p>Not found</p>
-            ) : data === undefined ? (
-                <p>Loading...</p>
-            ) : (
-                <SymbolDetail {...props} symbol={data} />
-            )}
-        </div>
+    return data === null ? (
+        <p className="p-3 text-muted h3">Not found</p>
+    ) : data === undefined ? (
+        <LoadingSpinner className="m-3" />
+    ) : (
+        <SymbolDetail {...props} symbol={data} />
     )
 }

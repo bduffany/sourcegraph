@@ -409,14 +409,16 @@ func gatherSymbols(ctx context.Context, state *State, dumpID int) chan lsifstore
 
 	// Attach monikers.
 	for id, data := range byID {
-		state.Monikers.Get(id).Each(func(monikerID int) {
-			moniker := state.MonikerData[monikerID]
-			data.Monikers = append(data.Monikers, lsifstore.MonikerData{
-				Kind:       moniker.Kind,
-				Scheme:     moniker.Scheme,
-				Identifier: moniker.Identifier,
+		if symbolMonikers := state.Monikers.Get(id); symbolMonikers != nil {
+			symbolMonikers.Each(func(monikerID int) {
+				moniker := state.MonikerData[monikerID]
+				data.Monikers = append(data.Monikers, lsifstore.MonikerData{
+					Kind:       moniker.Kind,
+					Scheme:     moniker.Scheme,
+					Identifier: moniker.Identifier,
+				})
 			})
-		})
+		}
 	}
 
 	// TODO(sqs): parallelize the sending to this channel

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { Route, RouteComponentProps, Switch } from 'react-router'
+import { Link } from 'react-router-dom'
 import { ButtonLink } from '../../../../shared/src/components/LinkOrButton'
 import { SettingsCascadeProps } from '../../../../shared/src/settings/settings'
 import { BreadcrumbSetters } from '../../components/Breadcrumbs'
@@ -31,7 +32,7 @@ export const SymbolsArea: React.FunctionComponent<Props> = ({
 }) => {
     const [isSidebarVisible, setIsSidebarVisible] = useState(false)
 
-    useBreadcrumb(useMemo(() => ({ key: 'symbols', element: <>Symbols</> }), []))
+    useBreadcrumb(useMemo(() => ({ key: 'symbols', element: <Link to={match.url}>Symbols</Link> }), []))
 
     const { viewOptions, toggleURLs } = useSymbolsViewOptions(props)
 

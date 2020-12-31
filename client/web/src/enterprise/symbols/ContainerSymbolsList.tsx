@@ -19,13 +19,13 @@ const Item: React.FunctionComponent<{
 
     const synopsisMarkdown = symbol.hover && symbolHoverSynopsisMarkdown(symbol.hover.markdown.text)
     return (
-        <Tag className={`position-relative ${className} d-flex`}>
-            <SymbolIcon kind={symbol.kind} className="mr-2 h2 mb-0" />
+        <Tag className={`${className} d-flex`}>
+            <Link to={symbol.url}>
+                <SymbolIcon kind={symbol.kind} className="mr-2 h2 mb-0" />
+            </Link>
             <div>
                 <h3 className="mb-0">
-                    <Link to={symbol.url} className="stretched-link">
-                        {title}
-                    </Link>
+                    <Link to={symbol.url}>{title}</Link>
                 </h3>
                 {subtitle && <p className="text-muted mb-0">{subtitle}</p>}
                 {synopsisMarkdown && (

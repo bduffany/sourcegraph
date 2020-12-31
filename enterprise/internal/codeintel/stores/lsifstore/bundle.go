@@ -2,9 +2,7 @@ package lsifstore
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"sort"
 	"strings"
 
@@ -446,10 +444,6 @@ func (s *Store) Symbols(ctx context.Context, bundleID int, filters *gql.SymbolFi
 	if err != nil {
 		return nil, 0, pkgerrors.Wrap(err, "store.ReadSymbols")
 	}
-	for _, d := range symbolDatas {
-		b, _ := json.Marshal(d)
-		fmt.Println(string(b))
-	}
 
 	rootSymbols := buildSymbolTree(symbolDatas, bundleID)
 
@@ -465,12 +459,23 @@ func (s *Store) Symbols(ctx context.Context, bundleID int, filters *gql.SymbolFi
 	}
 
 	// Apply filters.
-	trimTree(&rootSymbols, func(symbol *Symbol) bool {
-		if symbol.Text == "main" {
-			return false
-		}
-		return true
-	})
+	if filters != nil {
+		trimTree(&rootSymbols, func(symbol *Symbol) bool {
+			if !filters.Internals {
+				hasExportMoniker := false
+				for _, m := range symbol.Monikers {
+					if m.Kind == "export" {
+						hasExportMoniker = true
+						break
+					}
+				}
+				if !hasExportMoniker {
+					return false
+				}
+			}
+			return true
+		})
+	}
 
 	totalCount := len(rootSymbols) // TODO(sqs): doesnt account for skip/take
 

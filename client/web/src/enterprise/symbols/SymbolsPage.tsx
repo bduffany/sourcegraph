@@ -19,6 +19,7 @@ import { SettingsCascadeProps } from '../../../../shared/src/settings/settings'
 import { ContainerSymbolsList } from './ContainerSymbolsList'
 import { SymbolsAreaSidebarVisibilitySetterProps } from './SymbolsArea'
 import { SymbolsViewOptions, SymbolsViewOptionsProps } from './useSymbolsViewOptions'
+import { LoadingSpinner } from '@sourcegraph/react-loading-spinner'
 
 const RepositoryExpSymbolsGQLFragment = gql`
     fragment RepositoryExpSymbolsFields on ExpSymbol {
@@ -94,5 +95,5 @@ export const SymbolsPage: React.FunctionComponent<Props> = ({ repo, resolvedRev,
         )
     )
 
-    return data ? <ContainerSymbolsList symbols={data} history={history} /> : <p>Loading...</p>
+    return data ? <ContainerSymbolsList symbols={data} history={history} /> : <LoadingSpinner className="m-3" />
 }
