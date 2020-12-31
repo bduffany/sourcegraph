@@ -8,6 +8,13 @@ export interface SymbolsViewOptionsProps {
 
 export interface SymbolsViewOptions extends GQL.ISymbolFilters {}
 
+const DEFAULT_OPTIONS: SymbolsViewOptions = {
+    externals: true,
+    internals: false,
+}
+
+const KEYS: (keyof SymbolsViewOptions)[] = ['externals', 'internals']
+
 interface ToggleURLs {
     externals: H.LocationDescriptorObject
     internals: H.LocationDescriptorObject
@@ -23,20 +30,19 @@ const locationWithViewOptions = (
 ): H.LocationDescriptorObject => {
     const parameters = new URLSearchParams(base.search)
 
-    if (viewOptions.externals) {
-        parameters.set('externals', '1')
-    } else {
-        parameters.delete('externals')
-    }
-
-    if (viewOptions.internals) {
-        parameters.set('internals', '1')
-    } else {
-        parameters.delete('internals')
+    for (const key of KEYS) {
+        if (viewOptions[key] === DEFAULT_OPTIONS[key]) {
+            parameters.delete(key)
+        } else {
+            parameters.set(key, viewOptions[key] ? '1' : '0')
+        }
     }
 
     return { ...base, search: parameters.toString() }
 }
+
+const parseSearchParameterValue = (value: string | null, defaultValue: boolean): boolean =>
+    value === null ? defaultValue : value === '1'
 
 export const useSymbolsViewOptions = ({
     location,
@@ -44,8 +50,8 @@ export const useSymbolsViewOptions = ({
     const viewOptions = useMemo<SymbolsViewOptions>(() => {
         const parameters = new URLSearchParams(location.search)
         return {
-            externals: parameters.get('externals') !== null,
-            internals: parameters.get('internals') !== null,
+            externals: parseSearchParameterValue(parameters.get('externals'), DEFAULT_OPTIONS.externals),
+            internals: parseSearchParameterValue(parameters.get('internals'), DEFAULT_OPTIONS.internals),
         }
     }, [location.search])
 
