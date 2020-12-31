@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 
+	gql "github.com/sourcegraph/sourcegraph/cmd/frontend/graphqlbackend"
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/gitserver"
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/dbstore"
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/lsifstore"
@@ -62,7 +63,7 @@ type LSIFStore interface {
 	MonikerResults(ctx context.Context, bundleID int, tableName, scheme, identifier string, skip, take int) ([]lsifstore.Location, int, error)
 	PackageInformation(ctx context.Context, bundleID int, path string, packageInformationID string) (lsifstore.PackageInformationData, bool, error)
 	Packages(ctx context.Context, bundleID int, prefix string, skip, take int) ([]lsifstore.Package, int, error)
-	Symbols(ctx context.Context, bundleID int, prefix string, skip, take int) ([]lsifstore.Symbol, int, error)
+	Symbols(ctx context.Context, bundleID int, filters *gql.SymbolFilters, skip, take int) ([]lsifstore.Symbol, int, error)
 }
 
 type GitserverClient interface {

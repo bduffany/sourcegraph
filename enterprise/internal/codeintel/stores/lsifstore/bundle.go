@@ -11,6 +11,7 @@ import (
 	"github.com/inconshreveable/log15"
 	"github.com/opentracing/opentracing-go/log"
 	pkgerrors "github.com/pkg/errors"
+	gql "github.com/sourcegraph/sourcegraph/cmd/frontend/graphqlbackend"
 	"github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
@@ -432,18 +433,14 @@ func (s *Store) Packages(ctx context.Context, bundleID int, prefix string, skip,
 	return packageInformations, totalCount, nil
 }
 
-// Symbols returns all symbols defined in the given prefix. This method also returns the size
-// of the complete result set to aid in pagination (along with skip and take).
-func (s *Store) Symbols(ctx context.Context, bundleID int, prefix string, skip, take int) (_ []Symbol, _ int, err error) {
+// Symbols returns all symbols (subject to the filters).
+func (s *Store) Symbols(ctx context.Context, bundleID int, filters *gql.SymbolFilters, skip, take int) (_ []Symbol, _ int, err error) {
 	ctx, endObservation := s.operations.symbols.With(ctx, &err, observation.Args{LogFields: []log.Field{
 		log.Int("bundleID", bundleID),
-		log.String("prefix", prefix),
 		log.Int("skip", skip),
 		log.Int("take", take),
 	}})
 	defer endObservation(1, observation.Args{})
-
-	const fakeTotal = 100 // TODO(sqs)
 
 	symbolDatas, err := s.ReadSymbols(ctx, bundleID)
 	if err != nil {
@@ -466,9 +463,18 @@ func (s *Store) Symbols(ctx context.Context, bundleID int, prefix string, skip, 
 			associateMoniker(symbol, allMonikers)
 		})
 	}
-	fmt.Printf("root symbols: %d (total %d)\n", len(rootSymbols), len(symbolDatas))
 
-	return rootSymbols, fakeTotal, nil
+	// Apply filters.
+	trimTree(&rootSymbols, func(symbol *Symbol) bool {
+		if symbol.Text == "main" {
+			return false
+		}
+		return true
+	})
+
+	totalCount := len(rootSymbols) // TODO(sqs): doesnt account for skip/take
+
+	return rootSymbols, totalCount, nil
 }
 
 // hover returns the hover text locations for the given range.

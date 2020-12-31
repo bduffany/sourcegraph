@@ -252,6 +252,12 @@ type LSIFPackagesArgs struct {
 
 type LSIFSymbolsArgs struct {
 	graphqlutil.ConnectionArgs
+	Filters *SymbolFilters
+}
+
+type SymbolFilters struct {
+	Internals bool
+	Externals bool
 }
 
 type CodeIntelligenceRangeConnectionResolver interface {
@@ -310,6 +316,7 @@ type SymbolConnectionResolver interface {
 type SymbolResolver interface {
 	Text() string
 	Detail() *string
+	Kind() string /* enum SymbolKind */
 	Monikers() []MonikerResolver
 	Definitions(ctx context.Context) (LocationConnectionResolver, error)
 	References(ctx context.Context) (LocationConnectionResolver, error)

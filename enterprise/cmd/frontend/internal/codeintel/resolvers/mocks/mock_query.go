@@ -4,6 +4,7 @@ package mocks
 
 import (
 	"context"
+	graphqlbackend "github.com/sourcegraph/sourcegraph/cmd/frontend/graphqlbackend"
 	resolvers "github.com/sourcegraph/sourcegraph/enterprise/cmd/frontend/internal/codeintel/resolvers"
 	lsifstore "github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/lsifstore"
 	"sync"
@@ -72,7 +73,7 @@ func NewMockQueryResolver() *MockQueryResolver {
 			},
 		},
 		SymbolsFunc: &QueryResolverSymbolsFunc{
-			defaultHook: func(context.Context, int) ([]resolvers.AdjustedSymbol, int, error) {
+			defaultHook: func(context.Context, *graphqlbackend.SymbolFilters, int) ([]resolvers.AdjustedSymbol, int, error) {
 				return nil, 0, nil
 			},
 		},
@@ -796,24 +797,24 @@ func (c QueryResolverReferencesFuncCall) Results() []interface{} {
 // QueryResolverSymbolsFunc describes the behavior when the Symbols method
 // of the parent MockQueryResolver instance is invoked.
 type QueryResolverSymbolsFunc struct {
-	defaultHook func(context.Context, int) ([]resolvers.AdjustedSymbol, int, error)
-	hooks       []func(context.Context, int) ([]resolvers.AdjustedSymbol, int, error)
+	defaultHook func(context.Context, *graphqlbackend.SymbolFilters, int) ([]resolvers.AdjustedSymbol, int, error)
+	hooks       []func(context.Context, *graphqlbackend.SymbolFilters, int) ([]resolvers.AdjustedSymbol, int, error)
 	history     []QueryResolverSymbolsFuncCall
 	mutex       sync.Mutex
 }
 
 // Symbols delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockQueryResolver) Symbols(v0 context.Context, v1 int) ([]resolvers.AdjustedSymbol, int, error) {
-	r0, r1, r2 := m.SymbolsFunc.nextHook()(v0, v1)
-	m.SymbolsFunc.appendCall(QueryResolverSymbolsFuncCall{v0, v1, r0, r1, r2})
+func (m *MockQueryResolver) Symbols(v0 context.Context, v1 *graphqlbackend.SymbolFilters, v2 int) ([]resolvers.AdjustedSymbol, int, error) {
+	r0, r1, r2 := m.SymbolsFunc.nextHook()(v0, v1, v2)
+	m.SymbolsFunc.appendCall(QueryResolverSymbolsFuncCall{v0, v1, v2, r0, r1, r2})
 	return r0, r1, r2
 }
 
 // SetDefaultHook sets function that is called when the Symbols method of
 // the parent MockQueryResolver instance is invoked and the hook queue is
 // empty.
-func (f *QueryResolverSymbolsFunc) SetDefaultHook(hook func(context.Context, int) ([]resolvers.AdjustedSymbol, int, error)) {
+func (f *QueryResolverSymbolsFunc) SetDefaultHook(hook func(context.Context, *graphqlbackend.SymbolFilters, int) ([]resolvers.AdjustedSymbol, int, error)) {
 	f.defaultHook = hook
 }
 
@@ -821,7 +822,7 @@ func (f *QueryResolverSymbolsFunc) SetDefaultHook(hook func(context.Context, int
 // Symbols method of the parent MockQueryResolver instance inovkes the hook
 // at the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *QueryResolverSymbolsFunc) PushHook(hook func(context.Context, int) ([]resolvers.AdjustedSymbol, int, error)) {
+func (f *QueryResolverSymbolsFunc) PushHook(hook func(context.Context, *graphqlbackend.SymbolFilters, int) ([]resolvers.AdjustedSymbol, int, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -830,7 +831,7 @@ func (f *QueryResolverSymbolsFunc) PushHook(hook func(context.Context, int) ([]r
 // SetDefaultReturn calls SetDefaultDefaultHook with a function that returns
 // the given values.
 func (f *QueryResolverSymbolsFunc) SetDefaultReturn(r0 []resolvers.AdjustedSymbol, r1 int, r2 error) {
-	f.SetDefaultHook(func(context.Context, int) ([]resolvers.AdjustedSymbol, int, error) {
+	f.SetDefaultHook(func(context.Context, *graphqlbackend.SymbolFilters, int) ([]resolvers.AdjustedSymbol, int, error) {
 		return r0, r1, r2
 	})
 }
@@ -838,12 +839,12 @@ func (f *QueryResolverSymbolsFunc) SetDefaultReturn(r0 []resolvers.AdjustedSymbo
 // PushReturn calls PushDefaultHook with a function that returns the given
 // values.
 func (f *QueryResolverSymbolsFunc) PushReturn(r0 []resolvers.AdjustedSymbol, r1 int, r2 error) {
-	f.PushHook(func(context.Context, int) ([]resolvers.AdjustedSymbol, int, error) {
+	f.PushHook(func(context.Context, *graphqlbackend.SymbolFilters, int) ([]resolvers.AdjustedSymbol, int, error) {
 		return r0, r1, r2
 	})
 }
 
-func (f *QueryResolverSymbolsFunc) nextHook() func(context.Context, int) ([]resolvers.AdjustedSymbol, int, error) {
+func (f *QueryResolverSymbolsFunc) nextHook() func(context.Context, *graphqlbackend.SymbolFilters, int) ([]resolvers.AdjustedSymbol, int, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -881,7 +882,10 @@ type QueryResolverSymbolsFuncCall struct {
 	Arg0 context.Context
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 int
+	Arg1 *graphqlbackend.SymbolFilters
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 int
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 []resolvers.AdjustedSymbol
@@ -896,7 +900,7 @@ type QueryResolverSymbolsFuncCall struct {
 // Args returns an interface slice containing the arguments of this
 // invocation.
 func (c QueryResolverSymbolsFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
 }
 
 // Results returns an interface slice containing the results of this

@@ -5745,7 +5745,7 @@ interface TreeEntry {
     """
     TODO(sqs)
     """
-    expSymbols: ExpSymbolConnection
+    expSymbols(filters: SymbolFilters!): ExpSymbolConnection
 }
 
 """
@@ -6214,6 +6214,7 @@ A symbol.
 type ExpSymbol {
     text: String!
     detail: String
+    kind: SymbolKind!
 
     monikers: [Moniker!]!
 
@@ -6240,6 +6241,11 @@ type ExpSymbol {
     canonicalURL: String!
 
     children: [ExpSymbol!]!
+}
+
+input SymbolFilters {
+    internals: Boolean!
+    externals: Boolean!
 }
 
 type Moniker {

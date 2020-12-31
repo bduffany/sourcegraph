@@ -3,7 +3,9 @@ package graphql
 import (
 	"context"
 	"path"
+	"strings"
 
+	"github.com/sourcegraph/go-lsp"
 	gql "github.com/sourcegraph/sourcegraph/cmd/frontend/graphqlbackend"
 	"github.com/sourcegraph/sourcegraph/enterprise/cmd/frontend/internal/codeintel/resolvers"
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/lsifstore"
@@ -35,6 +37,10 @@ func (r *SymbolResolver) Detail() *string {
 		return &v
 	}
 	return nil
+}
+
+func (r *SymbolResolver) Kind() string /* enum SymbolKind */ {
+	return strings.ToUpper(lsp.SymbolKind(r.symbol.Kind).String())
 }
 
 func (r *SymbolResolver) Monikers() []gql.MonikerResolver {
@@ -79,6 +85,7 @@ func (r *SymbolResolver) References(ctx context.Context) (gql.LocationConnection
 }
 
 func (r *SymbolResolver) Hover(ctx context.Context) (gql.HoverResolver, error) {
+	// TODO(sqs): lookup hover by moniker if needed
 	if len(r.symbol.Locations) == 0 {
 		return nil, nil
 	}

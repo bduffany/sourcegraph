@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/opentracing/opentracing-go/log"
+	gql "github.com/sourcegraph/sourcegraph/cmd/frontend/graphqlbackend"
 	codeintelapi "github.com/sourcegraph/sourcegraph/enterprise/cmd/frontend/internal/codeintel/api"
 	store "github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/dbstore"
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/lsifstore"
@@ -68,7 +69,7 @@ type QueryResolver interface {
 	Hover(ctx context.Context, line, character int) (string, lsifstore.Range, bool, error)
 	Diagnostics(ctx context.Context, limit int) ([]AdjustedDiagnostic, int, error)
 	Packages(ctx context.Context, limit int) ([]AdjustedPackage, int, error)
-	Symbols(ctx context.Context, limit int) ([]AdjustedSymbol, int, error)
+	Symbols(ctx context.Context, filters *gql.SymbolFilters, limit int) ([]AdjustedSymbol, int, error)
 }
 
 type queryResolver struct {
@@ -479,7 +480,7 @@ func (r *queryResolver) Packages(ctx context.Context, limit int) (_ []AdjustedPa
 
 const slowSymbolsRequestThreshold = time.Second
 
-func (r *queryResolver) Symbols(ctx context.Context, limit int) (_ []AdjustedSymbol, _ int, err error) {
+func (r *queryResolver) Symbols(ctx context.Context, filters *gql.SymbolFilters, limit int) (_ []AdjustedSymbol, _ int, err error) {
 	ctx, endObservation := observeResolver(ctx, &err, "Symbols", r.operations.symbols, slowSymbolsRequestThreshold, observation.Args{
 		LogFields: []log.Field{
 			log.Int("repositoryID", r.repositoryID),
@@ -494,30 +495,24 @@ func (r *queryResolver) Symbols(ctx context.Context, limit int) (_ []AdjustedSym
 		return nil, 0, errors.New("unable to get symbols for non-root")
 	}
 
-	totalCount := 0
-	var allSymbols []codeintelapi.ResolvedSymbol
+	var (
+		allSymbols []codeintelapi.ResolvedSymbol
+		totalCount int
+	)
 	for i := range r.uploads {
-		adjustedPath, ok, err := r.positionAdjuster.AdjustPath(ctx, r.uploads[i].Commit, r.path, false)
-		if err != nil {
-			return nil, 0, err
-		}
-		if !ok {
-			continue
-		}
-
 		l := limit - len(allSymbols)
 		if l < 0 {
 			l = 0
 		}
 
-		symbols, count, err := r.codeIntelAPI.Symbols(ctx, adjustedPath, r.uploads[i].ID, l, 0)
+		symbols, subtotalCount, err := r.codeIntelAPI.Symbols(ctx, filters, r.uploads[i].ID, l, 0)
 		if err != nil {
 			return nil, 0, err
 		}
 		// TODO(sqs): call r.adjustLocations to re-adjust symbols' locations
 
-		totalCount += count
 		allSymbols = append(allSymbols, symbols...)
+		totalCount += subtotalCount
 	}
 
 	adjustedSymbols := make([]AdjustedSymbol, 0, len(allSymbols))

@@ -128,7 +128,7 @@ func (r *QueryResolver) Symbols(ctx context.Context, args *gql.LSIFSymbolsArgs) 
 		return nil, ErrIllegalLimit
 	}
 
-	symbols, totalCount, err := r.resolver.Symbols(ctx, limit)
+	symbols, totalCount, err := r.resolver.Symbols(ctx, args.Filters, limit)
 	if err != nil {
 		return nil, err
 	}

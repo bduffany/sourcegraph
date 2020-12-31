@@ -273,6 +273,15 @@ func correlateSymbol(state *wrappedState, element lsif.Element) error {
 		return ErrUnexpectedPayload
 	}
 
+	for i := range payload.Locations {
+		uri := payload.Locations[i].URI
+		relativeURI, err := filepath.Rel(state.ProjectRoot, uri)
+		if err != nil {
+			return fmt.Errorf("symbol location URI %q is not relative to project root %q (%s)", uri, state.ProjectRoot, err)
+		}
+		payload.Locations[i].URI = relativeURI
+	}
+
 	state.SymbolData[element.ID] = payload
 	return nil
 }

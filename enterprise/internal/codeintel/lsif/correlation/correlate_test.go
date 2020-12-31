@@ -140,12 +140,12 @@ func TestCorrelate(t *testing.T) {
 				SymbolData: protocol.SymbolData{Text: "foo", Kind: 4},
 				Locations: []protocol.SymbolLocation{
 					{
-						URI:       "file:///test/root/foo.go",
+						URI:       "foo.go",
 						Range:     &protocol.RangeData{Start: protocol.Pos{Character: 8}, End: protocol.Pos{Character: 11}},
 						FullRange: protocol.RangeData{End: protocol.Pos{Line: 3, Character: 9}},
 					},
 					{
-						URI:       "file:///test/root/bar.go",
+						URI:       "bar.go",
 						FullRange: protocol.RangeData{End: protocol.Pos{Line: 3, Character: 11}},
 					},
 				},

@@ -14,16 +14,17 @@ import {
     RepositoryExpSymbolsResult,
 } from '../../graphql-operations'
 import { RepoRevisionContainerContext } from '../../repo/RepoRevisionContainer'
-import { ExpSymbolDetailGQLFragment, SymbolDetail } from './SymbolDetail'
+import { ExpSymbolDetailGQLFragment } from './SymbolDetail'
 import { SettingsCascadeProps } from '../../../../shared/src/settings/settings'
-import { SymbolsSidebar } from './SymbolsSidebar'
-import { SymbolsContainerList } from './SymbolsContainerList'
+import { ContainerSymbolsList } from './ContainerSymbolsList'
 import { SymbolsAreaSidebarVisibilitySetterProps } from './SymbolsArea'
+import { SymbolsViewOptions, SymbolsViewOptionsProps } from './useSymbolsViewOptions'
 
 const RepositoryExpSymbolsGQLFragment = gql`
     fragment RepositoryExpSymbolsFields on ExpSymbol {
         text
         detail
+        kind
         monikers {
             identifier
         }
@@ -42,12 +43,12 @@ const RepositoryExpSymbolsGQLFragment = gql`
 const queryRepositorySymbols = (vars: RepositoryExpSymbolsVariables): Observable<RepositoryExpSymbolsFields[] | null> =>
     requestGraphQL<RepositoryExpSymbolsResult, RepositoryExpSymbolsVariables>(
         gql`
-            query RepositoryExpSymbols($repo: ID!, $commitID: String!, $path: String!) {
+            query RepositoryExpSymbols($repo: ID!, $commitID: String!, $path: String!, $filters: SymbolFilters!) {
                 node(id: $repo) {
                     ... on Repository {
                         commit(rev: $commitID) {
                             tree(path: $path) {
-                                expSymbols {
+                                expSymbols(filters: $filters) {
                                     nodes {
                                         ...RepositoryExpSymbolsFields
                                     }
@@ -67,36 +68,31 @@ const queryRepositorySymbols = (vars: RepositoryExpSymbolsVariables): Observable
 
 interface Props
     extends Pick<RepoRevisionContainerContext, 'repo' | 'resolvedRev'>,
-        RepoHeaderContributionsLifecycleProps,
-        BreadcrumbSetters,
         SettingsCascadeProps,
-        SymbolsAreaSidebarVisibilitySetterProps {
+        SymbolsAreaSidebarVisibilitySetterProps,
+        SymbolsViewOptionsProps {
     history: H.History
     location: H.Location
+    viewOptions: SymbolsViewOptions
 }
 
-export const SymbolsPage: React.FunctionComponent<Props> = ({ repo, resolvedRev, useBreadcrumb, ...props }) => {
+export const SymbolsPage: React.FunctionComponent<Props> = ({ repo, resolvedRev, viewOptions, history, ...props }) => {
     useEffect(() => {
         eventLogger.logViewEvent('Symbols')
     }, [])
 
-    useBreadcrumb(useMemo(() => ({ key: 'symbols', element: <>Symbols</> }), []))
-
     const data = useObservable(
-        useMemo(() => queryRepositorySymbols({ repo: repo.id, commitID: resolvedRev.commitID, path: '.' }), [
-            repo.id,
-            resolvedRev.commitID,
-        ])
+        useMemo(
+            () =>
+                queryRepositorySymbols({
+                    repo: repo.id,
+                    commitID: resolvedRev.commitID,
+                    path: '.',
+                    filters: viewOptions,
+                }),
+            [repo.id, resolvedRev.commitID, viewOptions]
+        )
     )
 
-    return data ? (
-        <>
-            <SymbolsSidebar data={data} />
-            <div style={{ overflow: 'auto' }} className="p-3">
-                <SymbolsContainerList symbols={data} />
-            </div>
-        </>
-    ) : (
-        <p>Loading...</p>
-    )
+    return data ? <ContainerSymbolsList symbols={data} history={history} /> : <p>Loading...</p>
 }

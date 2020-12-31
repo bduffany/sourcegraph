@@ -60,3 +60,14 @@ func associateMoniker(symbol *Symbol, allMonikers []MonikerLocations) {
 		}
 	}
 }
+
+func trimTree(roots *[]Symbol, keepFn func(symbol *Symbol) bool) {
+	keep := (*roots)[:0]
+	for i := range *roots {
+		if keepFn(&(*roots)[i]) {
+			keep = append(keep, (*roots)[i])
+			trimTree(&(*roots)[i].Children, keepFn)
+		}
+	}
+	*roots = keep
+}

@@ -17,6 +17,7 @@ import { RouteComponentProps } from 'react-router'
 import { SettingsCascadeProps } from '../../../../shared/src/settings/settings'
 import { ExpSymbolDetailGQLFragment, SymbolDetail } from './SymbolDetail'
 import { SymbolsAreaSidebarVisibilitySetterProps } from './SymbolsArea'
+import { SymbolsViewOptionsProps } from './useSymbolsViewOptions'
 
 const queryRepositorySymbol = (
     vars: RepositoryExpSymbolVariables & { scheme: string; identifier: string }
@@ -84,7 +85,8 @@ interface Props
         RepoHeaderContributionsLifecycleProps,
         BreadcrumbSetters,
         SettingsCascadeProps,
-        SymbolsAreaSidebarVisibilitySetterProps {}
+        SymbolsAreaSidebarVisibilitySetterProps,
+        SymbolsViewOptionsProps {}
 
 export const SymbolPage: React.FunctionComponent<Props> = ({
     repo,
@@ -109,7 +111,7 @@ export const SymbolPage: React.FunctionComponent<Props> = ({
         ])
     )
 
-    useBreadcrumb(useMemo(() => ({ key: 'symbol', element: data?.text }), [data?.text]))
+    useBreadcrumb(useMemo(() => ({ key: 'symbol', element: data?.text || '??' }), [data?.text]))
 
     return (
         <div className="container" style={{ overflow: 'auto' }}>

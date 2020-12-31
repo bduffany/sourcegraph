@@ -9,13 +9,17 @@ import (
 	"github.com/sourcegraph/sourcegraph/cmd/frontend/graphqlbackend/graphqlutil"
 )
 
-func (r *GitTreeEntryResolver) ExpSymbols(ctx context.Context) (*ExpSymbolConnection, error) {
+type ExpSymbolsArgs struct {
+	Filters *SymbolFilters
+}
+
+func (r *GitTreeEntryResolver) ExpSymbols(ctx context.Context, args *ExpSymbolsArgs) (*ExpSymbolConnection, error) {
 	lsifResolver, err := r.LSIF(ctx, &struct{ ToolName *string }{})
 	if err != nil {
 		return nil, err
 	}
 
-	symbolConnection, err := lsifResolver.Symbols(ctx, &LSIFSymbolsArgs{})
+	symbolConnection, err := lsifResolver.Symbols(ctx, &LSIFSymbolsArgs{Filters: args.Filters})
 	if err != nil {
 		return nil, err
 	}
@@ -45,6 +49,8 @@ type ExpSymbol struct {
 func (r *ExpSymbol) Text() string { return r.sym.Text() }
 
 func (r *ExpSymbol) Detail() *string { return r.sym.Detail() }
+
+func (r *ExpSymbol) Kind() string/* enum SymbolKind */ { return r.sym.Kind() }
 
 func (r *ExpSymbol) Monikers() []MonikerResolver { return r.sym.Monikers() }
 

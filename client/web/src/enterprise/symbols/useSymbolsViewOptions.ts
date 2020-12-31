@@ -1,10 +1,12 @@
 import H from 'history'
 import { useMemo } from 'react'
+import * as GQL from '../../../../shared/src/graphql/schema'
 
-export interface SymbolsViewOptions {
-    externals: boolean
-    internals: boolean
+export interface SymbolsViewOptionsProps {
+    viewOptions: SymbolsViewOptions
 }
+
+export interface SymbolsViewOptions extends GQL.ISymbolFilters {}
 
 interface ToggleURLs {
     externals: H.LocationDescriptorObject

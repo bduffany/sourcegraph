@@ -33,44 +33,41 @@ export const SymbolsArea: React.FunctionComponent<Props> = ({
 
     useBreadcrumb(useMemo(() => ({ key: 'symbols', element: <>Symbols</> }), []))
 
-    const commonProps: SymbolsAreaSidebarVisibilitySetterProps = {
-        setIsSidebarVisible,
-    }
-
     const { viewOptions, toggleURLs } = useSymbolsViewOptions(props)
 
     return (
         <>
             {isSidebarVisible && <div>Sidebar</div>}
-            <Switch>
-                {/* eslint-disable react/jsx-no-bind */}
-                <Route
-                    path={match.url}
-                    exact={true}
-                    render={(routeProps: RouteComponentProps<SymbolRouteProps>) => (
-                        <SymbolsPage
-                            {...props}
-                            {...commonProps}
-                            {...routeProps}
-                            useBreadcrumb={useBreadcrumb}
-                            setIsSidebarVisible={setIsSidebarVisible}
-                        />
-                    )}
-                />
-                <Route
-                    path={`${match.url}/:scheme/:identifier+`}
-                    render={(routeProps: RouteComponentProps<SymbolRouteProps>) => (
-                        <SymbolPage
-                            {...props}
-                            {...commonProps}
-                            {...routeProps}
-                            useBreadcrumb={useBreadcrumb}
-                            setIsSidebarVisible={setIsSidebarVisible}
-                        />
-                    )}
-                />
-                {/* eslint-enable react/jsx-no-bind */}
-            </Switch>
+            <div style={{ overflow: 'auto' }} className="w-100">
+                <Switch>
+                    {/* eslint-disable react/jsx-no-bind */}
+                    <Route
+                        path={match.url}
+                        exact={true}
+                        render={(routeProps: RouteComponentProps<SymbolRouteProps>) => (
+                            <SymbolsPage
+                                {...props}
+                                {...routeProps}
+                                viewOptions={viewOptions}
+                                setIsSidebarVisible={setIsSidebarVisible}
+                            />
+                        )}
+                    />
+                    <Route
+                        path={`${match.url}/:scheme/:identifier+`}
+                        render={(routeProps: RouteComponentProps<SymbolRouteProps>) => (
+                            <SymbolPage
+                                {...props}
+                                {...routeProps}
+                                useBreadcrumb={useBreadcrumb}
+                                viewOptions={viewOptions}
+                                setIsSidebarVisible={setIsSidebarVisible}
+                            />
+                        )}
+                    />
+                    {/* eslint-enable react/jsx-no-bind */}
+                </Switch>
+            </div>
             <RepoHeaderContributionPortal
                 position="right"
                 priority={20}
