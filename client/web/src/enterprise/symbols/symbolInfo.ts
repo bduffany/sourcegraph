@@ -33,7 +33,7 @@ const firstSentenceLength = (s: string): number => {
 // TODO(sqs): hacky
 export const symbolHoverSynopsisMarkdown = (hoverMarkdown: string): string | undefined => {
     const parts = hoverMarkdown.split(/^---/gm)
-    const prosePart = parts.find(part => !part.includes('```'))
+    const prosePart = parts.find(part => !part.startsWith('```'))
     if (!prosePart) {
         return undefined
     }

@@ -74,7 +74,6 @@ interface Props
         SymbolsViewOptionsProps {
     history: H.History
     location: H.Location
-    viewOptions: SymbolsViewOptions
 }
 
 export const SymbolsPage: React.FunctionComponent<Props> = ({ repo, resolvedRev, viewOptions, history, ...props }) => {

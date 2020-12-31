@@ -19,18 +19,19 @@ import { ExpSymbolDetailGQLFragment, SymbolDetail } from './SymbolDetail'
 import { SymbolsAreaSidebarVisibilitySetterProps } from './SymbolsArea'
 import { SymbolsViewOptionsProps } from './useSymbolsViewOptions'
 import { LoadingSpinner } from '@sourcegraph/react-loading-spinner'
+import { ContainerSymbolsList } from './ContainerSymbolsList'
 
 const queryRepositorySymbol = (
     vars: RepositoryExpSymbolVariables & { scheme: string; identifier: string }
-): Observable<ExpSymbolDetailFields | null> =>
+): Observable<(ExpSymbolDetailFields & { children?: ExpSymbolDetailFields[] }) | null> =>
     requestGraphQL<RepositoryExpSymbolResult, RepositoryExpSymbolVariables>(
         gql`
-            query RepositoryExpSymbol($repo: ID!, $revision: String!) {
+            query RepositoryExpSymbol($repo: ID!, $revision: String!, $filters: SymbolFilters!) {
                 node(id: $repo) {
                     ... on Repository {
                         commit(rev: $revision) {
                             tree(path: "") {
-                                expSymbols {
+                                expSymbols(filters: $filters) {
                                     nodes {
                                         ...ExpSymbolDetailFields
                                         children {
@@ -93,10 +94,12 @@ export const SymbolPage: React.FunctionComponent<Props> = ({
     repo,
     revision,
     resolvedRev,
+    viewOptions,
     match: {
         params: { scheme, identifier },
     },
     useBreadcrumb,
+    history,
     ...props
 }) => {
     useEffect(() => {
@@ -104,11 +107,12 @@ export const SymbolPage: React.FunctionComponent<Props> = ({
     }, [])
 
     const data = useObservable(
-        useMemo(() => queryRepositorySymbol({ repo: repo.id, revision, scheme, identifier }), [
+        useMemo(() => queryRepositorySymbol({ repo: repo.id, revision, scheme, identifier, filters: viewOptions }), [
             identifier,
             repo.id,
             revision,
             scheme,
+            viewOptions,
         ])
     )
 
@@ -119,6 +123,14 @@ export const SymbolPage: React.FunctionComponent<Props> = ({
     ) : data === undefined ? (
         <LoadingSpinner className="m-3" />
     ) : (
-        <SymbolDetail {...props} symbol={data} />
+        <>
+            <SymbolDetail {...props} symbol={data} history={history} />
+            {data.children && (
+                <ContainerSymbolsList
+                    symbols={data.children.sort((a, b) => (a.kind < b.kind ? -1 : 1))}
+                    history={history}
+                />
+            )}
+        </>
     )
 }
