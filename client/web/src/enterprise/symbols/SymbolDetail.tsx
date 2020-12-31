@@ -28,6 +28,11 @@ export const ExpSymbolDetailGQLFragment = gql`
                 text
             }
         }
+        definitions {
+            nodes {
+                url
+            }
+        }
         references {
             nodes {
                 range {
@@ -78,16 +83,18 @@ export const SymbolDetail: React.FunctionComponent<Props> = ({ symbol, history, 
                     <Markdown dangerousInnerHTML={renderMarkdown(hoverSig)} history={history} className="mt-3 mx-3" />
                 )}
 
-                <ul
-                    className="list-unstyled nav nav-pills d-flex flex-wrap justify-content-end"
-                    style={{ position: 'relative', marginTop: '-2.31rem', marginRight: '1.09rem' }}
-                >
-                    <li className="nav-item">
-                        <Link to="TODO" className="nav-link btn btn-secondary">
-                            Go to definition
-                        </Link>
-                    </li>
-                </ul>
+                {symbol.definitions.nodes.length > 0 && (
+                    <ul
+                        className="list-unstyled nav nav-pills d-flex flex-wrap justify-content-end"
+                        style={{ position: 'relative', marginTop: '-2.31rem', marginRight: '1.09rem' }}
+                    >
+                        <li className="nav-item">
+                            <Link to={symbol.definitions.nodes[0].url} className="nav-link btn btn-secondary">
+                                Go to definition
+                            </Link>
+                        </li>
+                    </ul>
+                )}
 
                 {hoverDocumentation && (
                     <Markdown

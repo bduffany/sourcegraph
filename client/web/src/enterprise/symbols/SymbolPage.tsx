@@ -115,8 +115,17 @@ export const SymbolPage: React.FunctionComponent<Props> = ({
             viewOptions,
         ])
     )
+    useEffect(() => {
+        if (data) {
+            console.log(data)
+        }
+    }, [data])
 
-    useBreadcrumb(useMemo(() => ({ key: 'symbol', element: data?.text || '??' }), [data?.text]))
+    useBreadcrumb(
+        useMemo(() => ({ key: 'symbol', element: data?.text || <LoadingSpinner className="icon-inline" /> }), [
+            data?.text,
+        ])
+    )
 
     return data === null ? (
         <p className="p-3 text-muted h3">Not found</p>

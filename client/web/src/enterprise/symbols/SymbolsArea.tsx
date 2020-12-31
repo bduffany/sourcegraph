@@ -32,7 +32,7 @@ export const SymbolsArea: React.FunctionComponent<Props> = ({
 }) => {
     const [isSidebarVisible, setIsSidebarVisible] = useState(false)
 
-    useBreadcrumb(useMemo(() => ({ key: 'symbols', element: <Link to={match.url}>Symbols</Link> }), []))
+    useBreadcrumb(useMemo(() => ({ key: 'symbols', element: <Link to={match.url}>Symbols</Link> }), [match.url]))
 
     const { viewOptions, toggleURLs } = useSymbolsViewOptions(props)
 

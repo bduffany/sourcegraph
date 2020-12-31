@@ -453,14 +453,14 @@ func (s *Store) Symbols(ctx context.Context, bundleID int, filters *gql.SymbolFi
 		return nil, 0, pkgerrors.Wrap(err, "store.ReadDefinitions")
 	}
 	for i := range rootSymbols {
-		walkSymbolTree(&rootSymbols[i], func(symbol *Symbol) {
+		WalkSymbolTree(&rootSymbols[i], func(symbol *Symbol) {
 			associateMoniker(symbol, allMonikers)
 		})
 	}
 
 	// Apply filters.
 	if filters != nil {
-		trimTree(&rootSymbols, func(symbol *Symbol) bool {
+		trimSymbolTree(&rootSymbols, func(symbol *Symbol) bool {
 			if !filters.Internals {
 				hasExportMoniker := false
 				for _, m := range symbol.Monikers {

@@ -55,7 +55,8 @@ type AdjustedPackage struct {
 // adjustment.
 type AdjustedSymbol struct {
 	lsifstore.Symbol
-	Dump store.Dump
+	Children []AdjustedSymbol
+	Dump     store.Dump
 }
 
 // QueryResolver is the main interface to bundle-related operations exposed to the GraphQL API. This
@@ -515,16 +516,26 @@ func (r *queryResolver) Symbols(ctx context.Context, filters *gql.SymbolFilters,
 		totalCount += subtotalCount
 	}
 
-	adjustedSymbols := make([]AdjustedSymbol, 0, len(allSymbols))
-	for i := range allSymbols {
-		// TODO(sqs): adjust?
-		adjustedSymbols = append(adjustedSymbols, AdjustedSymbol{
-			Symbol: allSymbols[i].Symbol,
-			Dump:   allSymbols[i].Dump,
-		})
-	}
+	adjustedSymbols := adjustSymbolsWithDump(allSymbols)
 
 	return adjustedSymbols, totalCount, nil
+}
+
+// TODO(sqs): not actually performing any adjustments right now
+func adjustSymbolsWithDump(roots []codeintelapi.ResolvedSymbol) []AdjustedSymbol {
+	var convertToAdjusted func(s *codeintelapi.ResolvedSymbol) AdjustedSymbol
+	convertToAdjusted = func(s *codeintelapi.ResolvedSymbol) AdjustedSymbol {
+		rs := AdjustedSymbol{
+			Dump:   s.Dump,
+			Symbol: s.Symbol,
+		}
+		for i := range s.Children {
+			rs.Children = append(rs.Children, convertToAdjusted(&s.Children[i]))
+		}
+		return rs
+	}
+
+	return convertToAdjusted(&codeintelapi.ResolvedSymbol{Children: roots}).Children
 }
 
 // uploadIDs returns a slice of this query's matched upload identifiers.

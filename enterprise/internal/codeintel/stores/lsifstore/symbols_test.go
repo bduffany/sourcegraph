@@ -82,9 +82,49 @@ func TestBuildSymbolTree(t *testing.T) {
 	}
 }
 
+func TestTrimSymbolTree(t *testing.T) {
+	tree := []Symbol{
+		{
+			SymbolData: protocol.SymbolData{Text: "0"},
+			Children: []Symbol{
+				{SymbolData: protocol.SymbolData{Text: "0a"}},
+				{
+					SymbolData: protocol.SymbolData{Text: "0b"},
+					Children: []Symbol{
+						{SymbolData: protocol.SymbolData{Text: "0b0"}},
+						{SymbolData: protocol.SymbolData{Text: "0b1"}},
+					},
+				},
+			},
+		},
+	}
+
+	trimSymbolTree(&tree, func(symbol *Symbol) bool {
+		return symbol.Text == "0" || symbol.Text == "0b" || symbol.Text == "0b1"
+	})
+
+	want := []Symbol{
+		{
+			SymbolData: protocol.SymbolData{Text: "0"},
+			Children: []Symbol{
+				{
+					SymbolData: protocol.SymbolData{Text: "0b"},
+					Children: []Symbol{
+						{SymbolData: protocol.SymbolData{Text: "0b1"}},
+					},
+				},
+			},
+		},
+	}
+
+	if diff := cmp.Diff(want, tree); diff != "" {
+		t.Errorf("unexpected tree (-want +got):\n%s", diff)
+	}
+}
+
 func findSymbolsMatching(roots []Symbol, match func(symbol *Symbol) bool) (matches []*Symbol) {
 	for i := range roots {
-		walkSymbolTree(&roots[i], func(symbol *Symbol) {
+		WalkSymbolTree(&roots[i], func(symbol *Symbol) {
 			if match(symbol) {
 				matches = append(matches, symbol)
 			}

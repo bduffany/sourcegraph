@@ -14,7 +14,8 @@ import (
 
 type ResolvedSymbol struct {
 	lsifstore.Symbol
-	Dump store.Dump
+	Children []ResolvedSymbol
+	Dump     store.Dump
 }
 
 // Symbols returns the symbols defined in the given path prefix.
@@ -46,13 +47,18 @@ func (api *CodeIntelAPI) Symbols(ctx context.Context, filters *gql.SymbolFilters
 	return resolveSymbolsWithDump(dump, symbols), totalCount, nil
 }
 
-func resolveSymbolsWithDump(dump store.Dump, symbols []lsifstore.Symbol) []ResolvedSymbol {
-	var resolvedSymbols []ResolvedSymbol
-	for _, symbol := range symbols {
-		resolvedSymbols = append(resolvedSymbols, ResolvedSymbol{
+func resolveSymbolsWithDump(dump store.Dump, roots []lsifstore.Symbol) []ResolvedSymbol {
+	var convertToResolved func(s *lsifstore.Symbol) ResolvedSymbol
+	convertToResolved = func(s *lsifstore.Symbol) ResolvedSymbol {
+		rs := ResolvedSymbol{
 			Dump:   dump,
-			Symbol: symbol,
-		})
+			Symbol: *s,
+		}
+		for i := range s.Children {
+			rs.Children = append(rs.Children, convertToResolved(&s.Children[i]))
+		}
+		return rs
 	}
-	return resolvedSymbols
+
+	return convertToResolved(&lsifstore.Symbol{Children: roots}).Children
 }

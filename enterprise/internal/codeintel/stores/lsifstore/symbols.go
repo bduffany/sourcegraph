@@ -33,10 +33,10 @@ func buildSymbolTree(datas []SymbolData, dumpID int) (roots []Symbol) {
 	return roots
 }
 
-func walkSymbolTree(root *Symbol, walkFn func(symbol *Symbol)) {
+func WalkSymbolTree(root *Symbol, walkFn func(symbol *Symbol)) {
 	walkFn(root)
 	for i := range root.Children {
-		walkSymbolTree(&root.Children[i], walkFn)
+		WalkSymbolTree(&root.Children[i], walkFn)
 	}
 }
 
@@ -61,12 +61,12 @@ func associateMoniker(symbol *Symbol, allMonikers []MonikerLocations) {
 	}
 }
 
-func trimTree(roots *[]Symbol, keepFn func(symbol *Symbol) bool) {
+func trimSymbolTree(roots *[]Symbol, keepFn func(symbol *Symbol) bool) {
 	keep := (*roots)[:0]
 	for i := range *roots {
 		if keepFn(&(*roots)[i]) {
+			trimSymbolTree(&(*roots)[i].Children, keepFn)
 			keep = append(keep, (*roots)[i])
-			trimTree(&(*roots)[i].Children, keepFn)
 		}
 	}
 	*roots = keep
