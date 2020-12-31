@@ -16,6 +16,7 @@ import { RepoRevisionContainerContext } from '../../repo/RepoRevisionContainer'
 import { RouteComponentProps } from 'react-router'
 import { SettingsCascadeProps } from '../../../../shared/src/settings/settings'
 import { ExpSymbolDetailGQLFragment, SymbolDetail } from './SymbolDetail'
+import { SymbolsAreaSidebarVisibilitySetterProps } from './SymbolsArea'
 
 const queryRepositorySymbol = (
     vars: RepositoryExpSymbolVariables & { scheme: string; identifier: string }
@@ -72,14 +73,20 @@ const queryRepositorySymbol = (
         })
     )
 
+export interface SymbolRouteProps {
+    scheme: string
+    identifier: string
+}
+
 interface Props
     extends Pick<RepoRevisionContainerContext, 'repo' | 'resolvedRev' | 'revision'>,
-        RouteComponentProps<{ scheme: string; identifier: string }>,
+        RouteComponentProps<SymbolRouteProps>,
         RepoHeaderContributionsLifecycleProps,
         BreadcrumbSetters,
-        SettingsCascadeProps {}
+        SettingsCascadeProps,
+        SymbolsAreaSidebarVisibilitySetterProps {}
 
-export const RepositorySymbolPage: React.FunctionComponent<Props> = ({
+export const SymbolPage: React.FunctionComponent<Props> = ({
     repo,
     revision,
     resolvedRev,
@@ -90,10 +97,8 @@ export const RepositorySymbolPage: React.FunctionComponent<Props> = ({
     ...props
 }) => {
     useEffect(() => {
-        eventLogger.logViewEvent('RepositorySymbol')
+        eventLogger.logViewEvent('Symbol')
     }, [])
-
-    useBreadcrumb(useMemo(() => ({ key: 'symbol', element: <>Symbol</> }), []))
 
     const data = useObservable(
         useMemo(() => queryRepositorySymbol({ repo: repo.id, revision, scheme, identifier }), [
@@ -103,6 +108,8 @@ export const RepositorySymbolPage: React.FunctionComponent<Props> = ({
             scheme,
         ])
     )
+
+    useBreadcrumb(useMemo(() => ({ key: 'symbol', element: data?.text }), [data?.text]))
 
     return (
         <div className="container" style={{ overflow: 'auto' }}>

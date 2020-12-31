@@ -18,6 +18,7 @@ import { ExpSymbolDetailGQLFragment, SymbolDetail } from './SymbolDetail'
 import { SettingsCascadeProps } from '../../../../shared/src/settings/settings'
 import { SymbolsSidebar } from './SymbolsSidebar'
 import { SymbolsContainerList } from './SymbolsContainerList'
+import { SymbolsAreaSidebarVisibilitySetterProps } from './SymbolsArea'
 
 const RepositoryExpSymbolsGQLFragment = gql`
     fragment RepositoryExpSymbolsFields on ExpSymbol {
@@ -68,19 +69,15 @@ interface Props
     extends Pick<RepoRevisionContainerContext, 'repo' | 'resolvedRev'>,
         RepoHeaderContributionsLifecycleProps,
         BreadcrumbSetters,
-        SettingsCascadeProps {
+        SettingsCascadeProps,
+        SymbolsAreaSidebarVisibilitySetterProps {
     history: H.History
     location: H.Location
 }
 
-export const RepositorySymbolsPage: React.FunctionComponent<Props> = ({
-    repo,
-    resolvedRev,
-    useBreadcrumb,
-    ...props
-}) => {
+export const SymbolsPage: React.FunctionComponent<Props> = ({ repo, resolvedRev, useBreadcrumb, ...props }) => {
     useEffect(() => {
-        eventLogger.logViewEvent('RepositorySymbols')
+        eventLogger.logViewEvent('Symbols')
     }, [])
 
     useBreadcrumb(useMemo(() => ({ key: 'symbols', element: <>Symbols</> }), []))
