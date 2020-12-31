@@ -2,6 +2,7 @@ package graphqlbackend
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -17,6 +18,9 @@ func (r *GitTreeEntryResolver) ExpSymbols(ctx context.Context, args *ExpSymbolsA
 	lsifResolver, err := r.LSIF(ctx, &struct{ ToolName *string }{})
 	if err != nil {
 		return nil, err
+	}
+	if lsifResolver == nil {
+		return nil, errors.New("LSIF data is not available")
 	}
 
 	symbolConnection, err := lsifResolver.Symbols(ctx, &LSIFSymbolsArgs{Filters: args.Filters})

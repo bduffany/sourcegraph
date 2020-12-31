@@ -3,12 +3,14 @@ package lsifstore
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/inconshreveable/log15"
 	"github.com/opentracing/opentracing-go/log"
 	pkgerrors "github.com/pkg/errors"
+	protocol "github.com/sourcegraph/lsif-protocol"
 	gql "github.com/sourcegraph/sourcegraph/cmd/frontend/graphqlbackend"
 	"github.com/sourcegraph/sourcegraph/internal/observation"
 )
@@ -460,16 +462,23 @@ func (s *Store) Symbols(ctx context.Context, bundleID int, filters *gql.SymbolFi
 
 	// Apply filters.
 	if filters != nil {
+		symbolIsInternal := func(symbol *Symbol) bool {
+			fmt.Println("Tags", symbol.Tags)
+			for _, tag := range symbol.Tags {
+				switch tag {
+				case protocol.Exported:
+					return false
+				case protocol.Unexported:
+					return true
+				}
+			}
+			// TODO(sqs): different ways of determining this based on the language and/or if the
+			// exported/unexported symbol tags are known to be in use?
+			return true // default to true
+		}
 		trimSymbolTree(&rootSymbols, func(symbol *Symbol) bool {
 			if !filters.Internals {
-				hasExportMoniker := false
-				for _, m := range symbol.Monikers {
-					if m.Kind == "export" {
-						hasExportMoniker = true
-						break
-					}
-				}
-				if !hasExportMoniker {
+				if symbolIsInternal(symbol) {
 					return false
 				}
 			}

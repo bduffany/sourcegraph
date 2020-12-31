@@ -346,12 +346,8 @@ func gatherSymbols(ctx context.Context, state *State, dumpID int) chan lsifstore
 			uri := state.DocumentData[docID]
 
 			byID[id] = &lsifstore.SymbolData{
-				ID: uint64(id),
-				SymbolData: protocol.SymbolData{
-					Text:   rng.Tag.Text,
-					Detail: rng.Tag.Detail,
-					Kind:   rng.Tag.Kind,
-				},
+				ID:         uint64(id),
+				SymbolData: rng.Tag.SymbolData,
 				Locations: []protocol.SymbolLocation{
 					{
 						URI: uri,
