@@ -631,7 +631,10 @@ func TestGroupBundleData(t *testing.T) {
 		t.Errorf("unexpected references (-want +got):\n%s", diff)
 	}
 
-	symbols := actualBundleData.Symbols
+	var symbols []lsifstore.SymbolData
+	for v := range actualBundleData.Symbols {
+		symbols = append(symbols, v)
+	}
 	sortSymbols(symbols)
 
 	expectedSymbols := []lsifstore.SymbolData{

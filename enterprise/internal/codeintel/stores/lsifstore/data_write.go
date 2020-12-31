@@ -114,14 +114,14 @@ func (s *Store) writeDefinitionReferences(ctx context.Context, bundleID int, tab
 	return withBatchInserter(ctx, s.Handle().DB(), tableName, []string{"dump_id", "scheme", "identifier", "data"}, inserter)
 }
 
-func (s *Store) WriteSymbols(ctx context.Context, bundleID int, symbols []SymbolData) (err error) {
+func (s *Store) WriteSymbols(ctx context.Context, bundleID int, symbols chan SymbolData) (err error) {
 	ctx, endObservation := s.operations.writeSymbols.With(ctx, &err, observation.Args{LogFields: []log.Field{
 		log.Int("bundleID", bundleID),
 	}})
 	defer endObservation(1, observation.Args{})
 
 	inserter := func(inserter *batch.BatchInserter) error {
-		for _, v := range symbols {
+		for v := range symbols {
 			data, err := s.serializer.MarshalSymbol(v)
 			if err != nil {
 				return err

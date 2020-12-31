@@ -1306,7 +1306,7 @@ func NewMockLSIFStore() *MockLSIFStore {
 			},
 		},
 		WriteSymbolsFunc: &LSIFStoreWriteSymbolsFunc{
-			defaultHook: func(context.Context, int, []lsifstore.SymbolData) error {
+			defaultHook: func(context.Context, int, chan lsifstore.SymbolData) error {
 				return nil
 			},
 		},
@@ -2098,15 +2098,15 @@ func (c LSIFStoreWriteResultChunksFuncCall) Results() []interface{} {
 // LSIFStoreWriteSymbolsFunc describes the behavior when the WriteSymbols
 // method of the parent MockLSIFStore instance is invoked.
 type LSIFStoreWriteSymbolsFunc struct {
-	defaultHook func(context.Context, int, []lsifstore.SymbolData) error
-	hooks       []func(context.Context, int, []lsifstore.SymbolData) error
+	defaultHook func(context.Context, int, chan lsifstore.SymbolData) error
+	hooks       []func(context.Context, int, chan lsifstore.SymbolData) error
 	history     []LSIFStoreWriteSymbolsFuncCall
 	mutex       sync.Mutex
 }
 
 // WriteSymbols delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockLSIFStore) WriteSymbols(v0 context.Context, v1 int, v2 []lsifstore.SymbolData) error {
+func (m *MockLSIFStore) WriteSymbols(v0 context.Context, v1 int, v2 chan lsifstore.SymbolData) error {
 	r0 := m.WriteSymbolsFunc.nextHook()(v0, v1, v2)
 	m.WriteSymbolsFunc.appendCall(LSIFStoreWriteSymbolsFuncCall{v0, v1, v2, r0})
 	return r0
@@ -2115,7 +2115,7 @@ func (m *MockLSIFStore) WriteSymbols(v0 context.Context, v1 int, v2 []lsifstore.
 // SetDefaultHook sets function that is called when the WriteSymbols method
 // of the parent MockLSIFStore instance is invoked and the hook queue is
 // empty.
-func (f *LSIFStoreWriteSymbolsFunc) SetDefaultHook(hook func(context.Context, int, []lsifstore.SymbolData) error) {
+func (f *LSIFStoreWriteSymbolsFunc) SetDefaultHook(hook func(context.Context, int, chan lsifstore.SymbolData) error) {
 	f.defaultHook = hook
 }
 
@@ -2123,7 +2123,7 @@ func (f *LSIFStoreWriteSymbolsFunc) SetDefaultHook(hook func(context.Context, in
 // WriteSymbols method of the parent MockLSIFStore instance inovkes the hook
 // at the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *LSIFStoreWriteSymbolsFunc) PushHook(hook func(context.Context, int, []lsifstore.SymbolData) error) {
+func (f *LSIFStoreWriteSymbolsFunc) PushHook(hook func(context.Context, int, chan lsifstore.SymbolData) error) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -2132,7 +2132,7 @@ func (f *LSIFStoreWriteSymbolsFunc) PushHook(hook func(context.Context, int, []l
 // SetDefaultReturn calls SetDefaultDefaultHook with a function that returns
 // the given values.
 func (f *LSIFStoreWriteSymbolsFunc) SetDefaultReturn(r0 error) {
-	f.SetDefaultHook(func(context.Context, int, []lsifstore.SymbolData) error {
+	f.SetDefaultHook(func(context.Context, int, chan lsifstore.SymbolData) error {
 		return r0
 	})
 }
@@ -2140,12 +2140,12 @@ func (f *LSIFStoreWriteSymbolsFunc) SetDefaultReturn(r0 error) {
 // PushReturn calls PushDefaultHook with a function that returns the given
 // values.
 func (f *LSIFStoreWriteSymbolsFunc) PushReturn(r0 error) {
-	f.PushHook(func(context.Context, int, []lsifstore.SymbolData) error {
+	f.PushHook(func(context.Context, int, chan lsifstore.SymbolData) error {
 		return r0
 	})
 }
 
-func (f *LSIFStoreWriteSymbolsFunc) nextHook() func(context.Context, int, []lsifstore.SymbolData) error {
+func (f *LSIFStoreWriteSymbolsFunc) nextHook() func(context.Context, int, chan lsifstore.SymbolData) error {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -2186,7 +2186,7 @@ type LSIFStoreWriteSymbolsFuncCall struct {
 	Arg1 int
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
-	Arg2 []lsifstore.SymbolData
+	Arg2 chan lsifstore.SymbolData
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 error
