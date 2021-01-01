@@ -319,6 +319,7 @@ type SymbolResolver interface {
 	Kind() string /* enum SymbolKind */
 	Monikers() []MonikerResolver
 	Definitions(ctx context.Context) (LocationConnectionResolver, error)
+	DefinitionsFullRanges(ctx context.Context) (LocationConnectionResolver, error)
 	References(ctx context.Context) (LocationConnectionResolver, error)
 	Hover(context.Context) (HoverResolver, error)
 	Children() []SymbolResolver

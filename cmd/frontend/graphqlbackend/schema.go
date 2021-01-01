@@ -5745,7 +5745,7 @@ interface TreeEntry {
     """
     TODO(sqs)
     """
-    expSymbols(filters: SymbolFilters!): ExpSymbolConnection
+    expSymbols(filters: SymbolFilters): ExpSymbolConnection
 }
 
 """
@@ -5889,7 +5889,7 @@ type GitTree implements TreeEntry {
     """
     TODO(sqs)
     """
-    expSymbols: ExpSymbolConnection
+    expSymbols(filters: SymbolFilters): ExpSymbolConnection
 }
 
 """
@@ -6172,7 +6172,7 @@ type GitBlob implements TreeEntry & File2 {
     """
     TODO(sqs)
     """
-    expSymbols: ExpSymbolConnection
+    expSymbols(filters: SymbolFilters): ExpSymbolConnection
 }
 
 """
@@ -6241,6 +6241,8 @@ type ExpSymbol {
     canonicalURL: String!
 
     children: [ExpSymbol!]!
+
+    editCommits: GitCommitConnection
 }
 
 input SymbolFilters {

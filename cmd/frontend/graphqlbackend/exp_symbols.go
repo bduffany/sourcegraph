@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net/url"
 	"strings"
 
@@ -108,4 +109,36 @@ func (r *ExpSymbol) Children() []*ExpSymbol {
 		}
 	}
 	return children
+}
+
+func (r *ExpSymbol) EditCommits(ctx context.Context) (*gitCommitConnectionResolver, error) {
+	// TODO(sqs)
+	locationConnection, err := r.sym.DefinitionsFullRanges(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	locations, err := locationConnection.Nodes(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(locations) == 0 {
+		return nil, nil
+	}
+
+	// git log -L
+	var lineRanges []string
+	for _, loc := range locations {
+		// TODO(sqs): use full range
+		lineRanges = append(lineRanges, fmt.Sprintf("%d,%d:%s", loc.Range().start().pos.Line+1, loc.Range().end().pos.Line+1, loc.Resource().stat.Name()))
+	}
+
+	first := int32(5)
+	log.Printf("line ranges %v", lineRanges)
+	return &gitCommitConnectionResolver{
+		lineRanges: lineRanges,
+		first:      &first,
+		// TODO(sqs): assumes all locations are from same repo, probably safe?
+		repo: locations[0].Resource().commit.repoResolver,
+	}, nil
 }

@@ -3,7 +3,6 @@ package lsifstore
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sort"
 	"strings"
 
@@ -463,7 +462,6 @@ func (s *Store) Symbols(ctx context.Context, bundleID int, filters *gql.SymbolFi
 	// Apply filters.
 	if filters != nil {
 		symbolIsInternal := func(symbol *Symbol) bool {
-			fmt.Println("Tags", symbol.Tags)
 			for _, tag := range symbol.Tags {
 				switch tag {
 				case protocol.Exported:

@@ -12,6 +12,8 @@ import { Location } from '@sourcegraph/extension-api-types'
 import { makeRepoURI } from '../../../../shared/src/util/url'
 import { renderMarkdown } from '../../../../shared/src/util/markdown'
 import { Link } from 'react-router-dom'
+import { gitCommitFragment } from '../../repo/commits/RepositoryCommitsPage'
+import { GitCommitNode } from '../../repo/commits/GitCommitNode'
 
 export const ExpSymbolDetailGQLFragment = gql`
     fragment ExpSymbolDetailFields on ExpSymbol {
@@ -56,7 +58,13 @@ export const ExpSymbolDetailGQLFragment = gql`
                 }
             }
         }
+        editCommits {
+            nodes {
+                ...GitCommitFields
+            }
+        }
     }
+    ${gitCommitFragment}
 `
 
 interface Props extends SettingsCascadeProps {
@@ -130,6 +138,14 @@ export const SymbolDetail: React.FunctionComponent<Props> = ({ symbol, history, 
                         settingsCascade={settingsCascade}
                         versionContext={undefined /* TODO(sqs) */}
                     />
+                </section>
+            )}
+            {symbol.editCommits.nodes.length > 1 && (
+                <section id="refs" className="my-4">
+                    <h2 className="mt-0 mx-3 mb-0 h4">Changes</h2>
+                    {symbol.editCommits.nodes.map(commit => (
+                        <GitCommitNode node={commit} />
+                    ))}
                 </section>
             )}
         </div>

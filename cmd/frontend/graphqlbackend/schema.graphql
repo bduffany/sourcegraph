@@ -6234,6 +6234,8 @@ type ExpSymbol {
     canonicalURL: String!
 
     children: [ExpSymbol!]!
+
+    editCommits: GitCommitConnection
 }
 
 input SymbolFilters {

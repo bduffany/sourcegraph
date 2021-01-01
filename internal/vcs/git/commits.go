@@ -50,6 +50,8 @@ type CommitsOptions struct {
 
 	Path string // only commits modifying the given path are selected (optional)
 
+	LineRanges []string // git log -L
+
 	// When true we opt out of attempting to fetch missing revisions
 	NoEnsureRevision bool
 }
@@ -244,6 +246,16 @@ func commitLogArgs(initialArgs []string, opt CommitsOptions) (args []string, err
 
 	if opt.Range != "" {
 		args = append(args, opt.Range)
+	}
+
+	if len(opt.LineRanges) > 0 {
+		args = append(args, "--no-patch")
+	}
+	for _, lineRange := range opt.LineRanges {
+		if err := checkSpecArgSafety(lineRange); err != nil {
+			return nil, err
+		}
+		args = append(args, "-L", lineRange)
 	}
 
 	if opt.Path != "" {

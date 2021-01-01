@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/sourcegraph/go-lsp"
+	protocol "github.com/sourcegraph/lsif-protocol"
 	gql "github.com/sourcegraph/sourcegraph/cmd/frontend/graphqlbackend"
 	"github.com/sourcegraph/sourcegraph/enterprise/cmd/frontend/internal/codeintel/resolvers"
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/lsifstore"
@@ -52,17 +53,33 @@ func (r *SymbolResolver) Monikers() []gql.MonikerResolver {
 }
 
 func (r *SymbolResolver) Definitions(ctx context.Context) (gql.LocationConnectionResolver, error) {
+	return r.definitions(ctx, func(loc protocol.SymbolLocation) protocol.RangeData {
+		if loc.Range != nil {
+			return *loc.Range
+		}
+		return loc.FullRange
+	})
+}
+
+func (r *SymbolResolver) DefinitionsFullRanges(ctx context.Context) (gql.LocationConnectionResolver, error) {
+	return r.definitions(ctx, func(loc protocol.SymbolLocation) protocol.RangeData {
+		return loc.FullRange
+	})
+}
+
+func (r *SymbolResolver) definitions(ctx context.Context, rangeFn func(protocol.SymbolLocation) protocol.RangeData) (gql.LocationConnectionResolver, error) {
 	// TODO(sqs): workspace symbols have locations, but document symbols dont (currently based on
 	// how this is all implemented).
 	var adjustedLocations []resolvers.AdjustedLocation
 	for _, loc := range r.symbol.Locations {
+		rng := rangeFn(loc)
 		adjustedLocations = append(adjustedLocations, resolvers.AdjustedLocation{
 			Dump:           r.symbol.Dump,
 			Path:           path.Clean(loc.URI),
 			AdjustedCommit: r.symbol.Dump.Commit,
 			AdjustedRange: lsifstore.Range{
-				Start: lsifstore.Position{Line: loc.Range.Start.Line, Character: loc.Range.Start.Character},
-				End:   lsifstore.Position{Line: loc.Range.End.Line, Character: loc.Range.End.Character},
+				Start: lsifstore.Position{Line: rng.Start.Line, Character: rng.Start.Character},
+				End:   lsifstore.Position{Line: rng.End.Line, Character: rng.End.Character},
 			},
 		})
 	}
