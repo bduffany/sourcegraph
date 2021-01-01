@@ -147,7 +147,7 @@ export const SymbolPage: React.FunctionComponent<Props> = ({
     useBreadcrumb(
         useMemo(
             () =>
-                data === null
+                data === null || (data !== undefined && data.containerSymbol === data.symbol)
                     ? null
                     : {
                           key: 'symbol/current',

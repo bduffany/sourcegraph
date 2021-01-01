@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react'
 import { Route, RouteComponentProps, Switch } from 'react-router'
 import { Link } from 'react-router-dom'
 import { ButtonLink } from '../../../../shared/src/components/LinkOrButton'
+import { Resizable } from '../../../../shared/src/components/Resizable'
 import { SettingsCascadeProps } from '../../../../shared/src/settings/settings'
 import { BreadcrumbSetters } from '../../components/Breadcrumbs'
 import { RepoHeaderContributionsLifecycleProps } from '../../repo/RepoHeader'
@@ -44,12 +45,15 @@ export const SymbolsArea: React.FunctionComponent<Props> = ({
     return (
         <>
             {sidebarOptions && (
-                <div
-                    style={{ overflow: 'auto', flex: '0 0 auto', maxWidth: '16rem' }}
-                    className="d-flex align-items-stretch"
-                >
-                    <SymbolsSidebar {...sidebarOptions} className="border-right" />
-                </div>
+                <Resizable
+                    className="symbols-area__sidebar border-right"
+                    handlePosition="right"
+                    storageKey="SymbolsSidebar"
+                    defaultSize={200 /* px */}
+                    element={
+                        <SymbolsSidebar {...sidebarOptions} allSymbolsURL={match.url} className="w-100 overflow-auto" />
+                    }
+                />
             )}
             <div style={{ overflow: 'auto' }} className="w-100">
                 <Switch>

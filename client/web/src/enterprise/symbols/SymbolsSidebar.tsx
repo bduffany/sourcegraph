@@ -25,9 +25,18 @@ const Item: React.FunctionComponent<{
     className?: string
 }> = ({ symbol, level, tag: Tag = 'li', className = '' }) => (
     <Tag>
-        <NavLink to={symbol.url} className={`d-flex align-items-center w-100 ${className}`} {...commonNavLinkProps}>
-            <SymbolIcon kind={symbol.kind} className="mr-1" />
-            {symbol.text}
+        <NavLink
+            to={symbol.url}
+            className={`d-flex align-items-center w-100 ${className}`}
+            {...commonNavLinkProps}
+            style={{
+                ...commonNavLinkProps.style,
+                fontSize: `${1 - 0.175 * level}rem`,
+                borderLeftColor: level > 0 ? 'var(--secondary)' : 'transparent',
+            }}
+        >
+            <SymbolIcon kind={symbol.kind} className="mr-1 flex-shrink-0 icon-inline" />
+            <span className="text-truncate">{symbol.text}</span>
         </NavLink>
         {symbol.children?.length > 0 && (
             <ItemList symbols={symbol.children} level={level + 1} itemClassName="pl-2 pr-3 py-1" />
@@ -40,7 +49,7 @@ const ItemList: React.FunctionComponent<{
     level: number
     itemClassName?: string
 }> = ({ symbols, level, itemClassName = '' }) => (
-    <ul className="list-unstyled mb-2" style={{ marginLeft: `${level * 0.5}rem` }}>
+    <ul className="list-unstyled mb-2" style={{ marginLeft: `${level * 1.275}rem` }}>
         {symbols
             .sort((a, b) => (a.kind < b.kind ? -1 : 1))
             .map(symbol => (
@@ -62,8 +71,8 @@ export const SymbolsSidebar: React.FunctionComponent<Props> = ({ containerSymbol
             </Link>
             <h2 className="mb-0">
                 <NavLink to={containerSymbol.url} className="d-flex align-items-center p-2" {...commonNavLinkProps}>
-                    <SymbolIcon kind={containerSymbol.kind} className="mr-1" />
-                    {containerSymbol.text}
+                    <SymbolIcon kind={containerSymbol.kind} className="mr-1 flex-shrink-0" />
+                    <span className="text-truncate">{containerSymbol.text}</span>
                 </NavLink>
             </h2>
         </header>
