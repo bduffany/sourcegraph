@@ -17,8 +17,8 @@ import { RepoRevisionContainerContext } from '../../repo/RepoRevisionContainer'
 import { ExpSymbolDetailGQLFragment } from './SymbolDetail'
 import { SettingsCascadeProps } from '../../../../shared/src/settings/settings'
 import { ContainerSymbolsList } from './ContainerSymbolsList'
-import { SymbolsAreaSidebarVisibilitySetterProps } from './SymbolsArea'
-import { SymbolsViewOptions, SymbolsViewOptionsProps } from './useSymbolsViewOptions'
+import { SymbolsSidebarOptionsSetterProps } from './SymbolsArea'
+import { SymbolsViewOptionsProps } from './useSymbolsViewOptions'
 import { LoadingSpinner } from '@sourcegraph/react-loading-spinner'
 
 const RepositoryExpSymbolsGQLFragment = gql`
@@ -70,7 +70,7 @@ const queryRepositorySymbols = (vars: RepositoryExpSymbolsVariables): Observable
 interface Props
     extends Pick<RepoRevisionContainerContext, 'repo' | 'resolvedRev'>,
         SettingsCascadeProps,
-        SymbolsAreaSidebarVisibilitySetterProps,
+        SymbolsSidebarOptionsSetterProps,
         SymbolsViewOptionsProps {
     history: H.History
     location: H.Location

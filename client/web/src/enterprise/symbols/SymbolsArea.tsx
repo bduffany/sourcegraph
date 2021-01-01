@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { Route, RouteComponentProps, Switch } from 'react-router'
 import { Link } from 'react-router-dom'
 import { ButtonLink } from '../../../../shared/src/components/LinkOrButton'
@@ -9,6 +9,7 @@ import { RepoHeaderContributionPortal } from '../../repo/RepoHeaderContributionP
 import { RepoRevisionContainerContext } from '../../repo/RepoRevisionContainer'
 import { SymbolPage, SymbolRouteProps } from './SymbolPage'
 import { SymbolsPage } from './SymbolsPage'
+import { SymbolsSidebar, SymbolsSidebarOptions } from './SymbolsSidebar'
 import { SymbolsExternalsViewOptionToggle, SymbolsInternalsViewOptionToggle } from './SymbolsViewOptionsButtons'
 import { useSymbolsViewOptions } from './useSymbolsViewOptions'
 
@@ -19,8 +20,8 @@ interface Props
         SettingsCascadeProps,
         BreadcrumbSetters {}
 
-export interface SymbolsAreaSidebarVisibilitySetterProps {
-    setIsSidebarVisible: (isVisible: boolean) => void
+export interface SymbolsSidebarOptionsSetterProps {
+    setSidebarOptions: (options: SymbolsSidebarOptions | null) => void
 }
 
 export const SymbolsArea: React.FunctionComponent<Props> = ({
@@ -30,7 +31,11 @@ export const SymbolsArea: React.FunctionComponent<Props> = ({
     history,
     ...props
 }) => {
-    const [isSidebarVisible, setIsSidebarVisible] = useState(false)
+    const [sidebarOptions, rawSetSidebarOptions] = useState<SymbolsSidebarOptions | null>(null)
+    const setSidebarOptions = useCallback<SymbolsSidebarOptionsSetterProps['setSidebarOptions']>(options => {
+        rawSetSidebarOptions(options)
+        return () => rawSetSidebarOptions(null)
+    }, [])
 
     useBreadcrumb(useMemo(() => ({ key: 'symbols', element: <Link to={match.url}>Symbols</Link> }), [match.url]))
 
@@ -38,7 +43,14 @@ export const SymbolsArea: React.FunctionComponent<Props> = ({
 
     return (
         <>
-            {isSidebarVisible && <div>Sidebar</div>}
+            {sidebarOptions && (
+                <div
+                    style={{ overflow: 'auto', flex: '0 0 auto', maxWidth: '16rem' }}
+                    className="d-flex align-items-stretch"
+                >
+                    <SymbolsSidebar {...sidebarOptions} className="border-right" />
+                </div>
+            )}
             <div style={{ overflow: 'auto' }} className="w-100">
                 <Switch>
                     {/* eslint-disable react/jsx-no-bind */}
@@ -50,19 +62,20 @@ export const SymbolsArea: React.FunctionComponent<Props> = ({
                                 {...props}
                                 {...routeProps}
                                 viewOptions={viewOptions}
-                                setIsSidebarVisible={setIsSidebarVisible}
+                                setSidebarOptions={setSidebarOptions}
                             />
                         )}
                     />
                     <Route
                         path={`${match.url}/:scheme/:identifier+`}
+                        sensitive={true}
                         render={(routeProps: RouteComponentProps<SymbolRouteProps>) => (
                             <SymbolPage
                                 {...props}
                                 {...routeProps}
                                 useBreadcrumb={useBreadcrumb}
                                 viewOptions={viewOptions}
-                                setIsSidebarVisible={setIsSidebarVisible}
+                                setSidebarOptions={setSidebarOptions}
                             />
                         )}
                     />

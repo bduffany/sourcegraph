@@ -16,14 +16,22 @@ import { RepoRevisionContainerContext } from '../../repo/RepoRevisionContainer'
 import { RouteComponentProps } from 'react-router'
 import { SettingsCascadeProps } from '../../../../shared/src/settings/settings'
 import { ExpSymbolDetailGQLFragment, SymbolDetail } from './SymbolDetail'
-import { SymbolsAreaSidebarVisibilitySetterProps } from './SymbolsArea'
+import { SymbolsSidebarOptionsSetterProps } from './SymbolsArea'
 import { SymbolsViewOptionsProps } from './useSymbolsViewOptions'
 import { LoadingSpinner } from '@sourcegraph/react-loading-spinner'
 import { ContainerSymbolsList } from './ContainerSymbolsList'
+import { Link } from 'react-router-dom'
+import { memoizeObservable } from '../../../../shared/src/util/memoizeObservable'
 
-const queryRepositorySymbol = (
+const queryRepositorySymbolUncached = (
     vars: RepositoryExpSymbolVariables & { scheme: string; identifier: string }
-): Observable<(ExpSymbolDetailFields & { children?: ExpSymbolDetailFields[] }) | null> =>
+): Observable<{
+    symbol: ExpSymbolDetailFields & { children: (ExpSymbolDetailFields & { children: ExpSymbolDetailFields[] })[] }
+
+    containerSymbol: ExpSymbolDetailFields & {
+        children: (ExpSymbolDetailFields & { children: ExpSymbolDetailFields[] })[]
+    }
+} | null> =>
     requestGraphQL<RepositoryExpSymbolResult, RepositoryExpSymbolVariables>(
         gql`
             query RepositoryExpSymbol($repo: ID!, $revision: String!, $filters: SymbolFilters!) {
@@ -59,15 +67,15 @@ const queryRepositorySymbol = (
                 sym.monikers.some(moniker => moniker.scheme === vars.scheme && moniker.identifier === vars.identifier)
             for (const node of data.node?.commit?.tree?.expSymbols?.nodes || []) {
                 if (match(node)) {
-                    return node
+                    return { symbol: node, containerSymbol: node }
                 }
                 for (const child of node.children) {
                     if (match(child)) {
-                        return child
+                        return { symbol: child, containerSymbol: node }
                     }
                     for (const childChild of child.children) {
                         if (match(childChild)) {
-                            return childChild
+                            return { symbol: childChild, containerSymbol: node }
                         }
                     }
                 }
@@ -75,6 +83,8 @@ const queryRepositorySymbol = (
             return null
         })
     )
+
+const queryRepositorySymbol = memoizeObservable(queryRepositorySymbolUncached, parameters => JSON.stringify(parameters))
 
 export interface SymbolRouteProps {
     scheme: string
@@ -87,7 +97,7 @@ interface Props
         RepoHeaderContributionsLifecycleProps,
         BreadcrumbSetters,
         SettingsCascadeProps,
-        SymbolsAreaSidebarVisibilitySetterProps,
+        SymbolsSidebarOptionsSetterProps,
         SymbolsViewOptionsProps {}
 
 export const SymbolPage: React.FunctionComponent<Props> = ({
@@ -95,6 +105,7 @@ export const SymbolPage: React.FunctionComponent<Props> = ({
     revision,
     resolvedRev,
     viewOptions,
+    setSidebarOptions,
     match: {
         params: { scheme, identifier },
     },
@@ -122,10 +133,40 @@ export const SymbolPage: React.FunctionComponent<Props> = ({
     }, [data])
 
     useBreadcrumb(
-        useMemo(() => ({ key: 'symbol', element: data?.text || <LoadingSpinner className="icon-inline" /> }), [
-            data?.text,
-        ])
+        useMemo(
+            () =>
+                data && data.containerSymbol !== data.symbol
+                    ? {
+                          key: 'symbol/container',
+                          element: <Link to={data.containerSymbol.url}>{data.containerSymbol.text}</Link>,
+                      }
+                    : null,
+            [data]
+        )
     )
+    useBreadcrumb(
+        useMemo(
+            () =>
+                data === null
+                    ? null
+                    : {
+                          key: 'symbol/current',
+                          element: data ? (
+                              data.containerSymbol === data.symbol ? (
+                                  <Link to={data.symbol.url}>{data.symbol.text}</Link>
+                              ) : null
+                          ) : (
+                              <LoadingSpinner className="icon-inline" />
+                          ),
+                      },
+            [data]
+        )
+    )
+
+    useEffect(() => setSidebarOptions(data?.containerSymbol ? { containerSymbol: data.containerSymbol } : null), [
+        data,
+        setSidebarOptions,
+    ])
 
     return data === null ? (
         <p className="p-3 text-muted h3">Not found</p>
@@ -133,10 +174,10 @@ export const SymbolPage: React.FunctionComponent<Props> = ({
         <LoadingSpinner className="m-3" />
     ) : (
         <>
-            <SymbolDetail {...props} symbol={data} history={history} />
-            {data.children && (
+            <SymbolDetail {...props} symbol={data.symbol} history={history} />
+            {data.symbol.children && (
                 <ContainerSymbolsList
-                    symbols={data.children.sort((a, b) => (a.kind < b.kind ? -1 : 1))}
+                    symbols={data.symbol.children.sort((a, b) => (a.kind < b.kind ? -1 : 1))}
                     history={history}
                 />
             )}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/url"
 	"strings"
 
@@ -134,7 +133,6 @@ func (r *ExpSymbol) EditCommits(ctx context.Context) (*gitCommitConnectionResolv
 	}
 
 	first := int32(5)
-	log.Printf("line ranges %v", lineRanges)
 	return &gitCommitConnectionResolver{
 		lineRanges: lineRanges,
 		first:      &first,

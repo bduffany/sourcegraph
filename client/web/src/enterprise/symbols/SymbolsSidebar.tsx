@@ -1,40 +1,77 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
-import { RepositoryExpSymbolsFields } from '../../graphql-operations'
+import { Link, NavLink } from 'react-router-dom'
+import { SymbolIcon } from '../../../../shared/src/symbols/SymbolIcon'
+import { ExpSymbolDetailFields } from '../../graphql-operations'
 
-interface Props {
-    data: RepositoryExpSymbolsFields[]
+export interface SymbolsSidebarOptions {
+    containerSymbol: ExpSymbolDetailFields & {
+        children: (ExpSymbolDetailFields & { children: ExpSymbolDetailFields[] })[]
+    }
 }
 
-export const SymbolsSidebar: React.FunctionComponent<Props> = ({ data }) => (
-    <ul
-        className="sticky-top flex-column list-unstyled px-3 pt-3 pb-0 m-0"
-        style={{ flex: '0 0 auto', overflow: 'auto' }}
-    >
-        {data
-            .filter(symbol => symbol.text !== 'main')
+const commonNavLinkProps: Pick<
+    React.ComponentProps<NavLink>,
+    'className' | 'style' | 'activeClassName' | 'activeStyle'
+> = {
+    style: { borderLeft: 'solid 3px transparent', borderLeftColor: 'transparent' },
+    activeClassName: 'text-body',
+    activeStyle: { borderLeftColor: 'var(--primary)' },
+}
+
+const Item: React.FunctionComponent<{
+    symbol: ExpSymbolDetailFields & { children: ExpSymbolDetailFields[] }
+    level: number
+    tag?: 'li'
+    className?: string
+}> = ({ symbol, level, tag: Tag = 'li', className = '' }) => (
+    <Tag>
+        <NavLink to={symbol.url} className={`d-flex align-items-center w-100 ${className}`} {...commonNavLinkProps}>
+            <SymbolIcon kind={symbol.kind} className="mr-1" />
+            {symbol.text}
+        </NavLink>
+        {symbol.children?.length > 0 && (
+            <ItemList symbols={symbol.children} level={level + 1} itemClassName="pl-2 pr-3 py-1" />
+        )}
+    </Tag>
+)
+
+const ItemList: React.FunctionComponent<{
+    symbols: (ExpSymbolDetailFields & { children: ExpSymbolDetailFields[] })[]
+    level: number
+    itemClassName?: string
+}> = ({ symbols, level, itemClassName = '' }) => (
+    <ul className="list-unstyled mb-2" style={{ marginLeft: `${level * 0.5}rem` }}>
+        {symbols
+            .sort((a, b) => (a.kind < b.kind ? -1 : 1))
             .map(symbol => (
-                <li key={symbol.url} className="pb-1">
-                    <Link to={symbol.url}>{symbol.text}</Link>
-                    {symbol.children.length > 0 && (
-                        <ul className="list-unstyled pl-3">
-                            {symbol.children.map(childSymbol => (
-                                <li key={childSymbol.url}>
-                                    <Link to={childSymbol.url}>{childSymbol.text}</Link>
-                                    {childSymbol.children.length > 0 && (
-                                        <ul className="list-unstyled pl-3">
-                                            {childSymbol.children.map(childChildSymbol => (
-                                                <li key={childChildSymbol.url}>
-                                                    <Link to={childChildSymbol.url}>{childChildSymbol.text}</Link>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </li>
+                <Item key={symbol.url} symbol={symbol} className={itemClassName} level={level} />
             ))}
     </ul>
+)
+
+interface Props extends SymbolsSidebarOptions {
+    allSymbolsURL: string
+    className?: string
+}
+
+export const SymbolsSidebar: React.FunctionComponent<Props> = ({ containerSymbol, allSymbolsURL, className = '' }) => (
+    <nav className={className}>
+        <header className="mb-2">
+            <Link to={allSymbolsURL} className="d-block small p-2 pb-1 pl-3">
+                &laquo; All symbols
+            </Link>
+            <h2 className="mb-0">
+                <NavLink to={containerSymbol.url} className="d-flex align-items-center p-2" {...commonNavLinkProps}>
+                    <SymbolIcon kind={containerSymbol.kind} className="mr-1" />
+                    {containerSymbol.text}
+                </NavLink>
+            </h2>
+        </header>
+
+        {containerSymbol.children.length > 0 ? (
+            <ItemList symbols={containerSymbol.children} itemClassName="pl-2 pr-3 py-1" level={0} />
+        ) : (
+            <p className="text-muted">No child symbols</p>
+        )}
+    </nav>
 )
