@@ -489,6 +489,33 @@ func (s *Store) Symbols(ctx context.Context, bundleID int, filters *gql.SymbolFi
 	return rootSymbols, totalCount, nil
 }
 
+// Symbol looks up a symbol by its moniker.
+func (s *Store) Symbol(ctx context.Context, bundleID int, scheme, identifier string) (_ *Symbol, err error) {
+	ctx, endObservation := s.operations.symbols.With(ctx, &err, observation.Args{LogFields: []log.Field{
+		log.Int("bundleID", bundleID),
+		log.String("scheme", scheme),
+		log.String("identifier", identifier),
+	}})
+	defer endObservation(1, observation.Args{})
+
+	symbols, _, err := s.Symbols(ctx, bundleID, nil, 0, 0)
+	if err != nil {
+		return nil, pkgerrors.Wrap(err, "store.Symbols")
+	}
+
+	var found *Symbol
+	WalkSymbolTree(&Symbol{Children: symbols}, func(symbol *Symbol) {
+		for _, m := range symbol.Monikers {
+			if m.Scheme == scheme && m.Identifier==identifier {
+				if found
+				found=symbol
+			}
+		}
+	})
+
+	return found, nil
+}
+
 // hover returns the hover text locations for the given range.
 func (s *Store) hover(ctx context.Context, bundleID int, path string, documentData DocumentData, r RangeData) (string, bool, error) {
 	if r.HoverResultID == "" {

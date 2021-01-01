@@ -39,6 +39,27 @@ func (r *GitTreeEntryResolver) ExpSymbols(ctx context.Context, args *ExpSymbolsA
 	return (*ExpSymbolConnection)(&expSymbols), nil
 }
 
+type ExpSymbolArgs struct {
+	Moniker MonikerInput
+}
+
+func (r *GitTreeEntryResolver) ExpSymbol(ctx context.Context, args *ExpSymbolArgs) (*ExpSymbol, error) {
+	lsifResolver, err := r.LSIF(ctx, &struct{ ToolName *string }{})
+	if err != nil {
+		return nil, err
+	}
+	if lsifResolver == nil {
+		return nil, errors.New("LSIF data is not available")
+	}
+
+	symbol, err := lsifResolver.Symbol(ctx, &LSIFSymbolArgs{Moniker: args.Moniker})
+	if err != nil {
+		return nil, err
+	}
+
+	return &ExpSymbol{sym: symbol, tree: r}, nil
+}
+
 type ExpSymbolConnection []*ExpSymbol
 
 func (c ExpSymbolConnection) Nodes() []*ExpSymbol             { return c }

@@ -142,3 +142,19 @@ func (r *QueryResolver) Symbols(ctx context.Context, args *gql.LSIFSymbolsArgs) 
 	}
 	return NewSymbolConnectionResolver(symbols, totalCount, r.locationResolver, newQueryResolver), nil
 }
+
+func (r *QueryResolver) Symbol(ctx context.Context, args *gql.LSIFSymbolArgs) (gql.SymbolResolver, error) {
+	symbol, err := r.resolver.Symbol(ctx, args.Moniker.Scheme, args.Moniker.Identifier)
+	if symbol == nil || err != nil {
+		return nil, err
+	}
+
+	newQueryResolver := func(ctx context.Context, path string) (*QueryResolver, error) {
+		type tmpWithPath interface {
+			TmpWithPath(path string) resolvers.QueryResolver
+		}
+		// TODO(sqs): hacky
+		return NewQueryResolver(r.resolver.(tmpWithPath).TmpWithPath(path), r.locationResolver).(*QueryResolver), nil
+	}
+	return NewSymbolResolver(*symbol, r.locationResolver, newQueryResolver), nil
+}

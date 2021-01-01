@@ -205,6 +205,7 @@ type GitTreeLSIFDataResolver interface {
 	Diagnostics(ctx context.Context, args *LSIFDiagnosticsArgs) (DiagnosticConnectionResolver, error)
 	Packages(ctx context.Context, args *LSIFPackagesArgs) (PackageConnectionResolver, error)
 	Symbols(ctx context.Context, args *LSIFSymbolsArgs) (SymbolConnectionResolver, error)
+	Symbol(ctx context.Context, args *LSIFSymbolArgs) (SymbolResolver, error)
 }
 
 type GitBlobLSIFDataResolver interface {
@@ -253,6 +254,15 @@ type LSIFPackagesArgs struct {
 type LSIFSymbolsArgs struct {
 	graphqlutil.ConnectionArgs
 	Filters *SymbolFilters
+}
+
+type LSIFSymbolArgs struct {
+	Moniker MonikerInput
+}
+
+type MonikerInput struct {
+	Identifier string
+	Scheme     string
 }
 
 type SymbolFilters struct {

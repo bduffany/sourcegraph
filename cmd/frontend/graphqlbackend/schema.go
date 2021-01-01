@@ -5746,6 +5746,7 @@ interface TreeEntry {
     TODO(sqs)
     """
     expSymbols(filters: SymbolFilters): ExpSymbolConnection
+    expSymbol(moniker: MonikerInput!): ExpSymbol
 }
 
 """
@@ -5890,6 +5891,7 @@ type GitTree implements TreeEntry {
     TODO(sqs)
     """
     expSymbols(filters: SymbolFilters): ExpSymbolConnection
+    expSymbol(moniker: MonikerInput!): ExpSymbol
 }
 
 """
@@ -6173,6 +6175,7 @@ type GitBlob implements TreeEntry & File2 {
     TODO(sqs)
     """
     expSymbols(filters: SymbolFilters): ExpSymbolConnection
+    expSymbol(moniker: MonikerInput!): ExpSymbol
 }
 
 """
@@ -6206,6 +6209,11 @@ type ExpSymbolConnection {
     Pagination information.
     """
     pageInfo: PageInfo!
+}
+
+input MonikerInput {
+    scheme: String!
+    identifier: String!
 }
 
 """

@@ -71,6 +71,7 @@ type QueryResolver interface {
 	Diagnostics(ctx context.Context, limit int) ([]AdjustedDiagnostic, int, error)
 	Packages(ctx context.Context, limit int) ([]AdjustedPackage, int, error)
 	Symbols(ctx context.Context, filters *gql.SymbolFilters, limit int) ([]AdjustedSymbol, int, error)
+	Symbol(ctx context.Context, scheme, identifier string) (*AdjustedSymbol, error)
 }
 
 type queryResolver struct {
@@ -511,6 +512,7 @@ func (r *queryResolver) Symbols(ctx context.Context, filters *gql.SymbolFilters,
 			return nil, 0, err
 		}
 		// TODO(sqs): call r.adjustLocations to re-adjust symbols' locations
+		// TODO(sqs): handle case when symbol trees from different dumps have conflicts/overlap
 
 		allSymbols = append(allSymbols, symbols...)
 		totalCount += subtotalCount
@@ -519,6 +521,38 @@ func (r *queryResolver) Symbols(ctx context.Context, filters *gql.SymbolFilters,
 	adjustedSymbols := adjustSymbolsWithDump(allSymbols)
 
 	return adjustedSymbols, totalCount, nil
+}
+
+func (r *queryResolver) Symbol(ctx context.Context, scheme, identifier string) (_ *AdjustedSymbol, err error) {
+	ctx, endObservation := observeResolver(ctx, &err, "Symbol", r.operations.symbol, slowSymbolsRequestThreshold, observation.Args{
+		LogFields: []log.Field{
+			log.Int("repositoryID", r.repositoryID),
+			log.String("commit", r.commit),
+			log.String("uploadIDs", strings.Join(r.uploadIDs(), ", ")),
+			log.String("scheme", scheme),
+			log.String("identifier", identifier),
+		},
+	})
+	defer endObservation()
+
+	if r.path != "" {
+		return nil, errors.New("unable to get symbol for non-root")
+	}
+
+	for i := range r.uploads {
+		symbol, err := r.codeIntelAPI.Symbol(ctx, r.uploads[i].ID, scheme, identifier)
+		if err != nil {
+			return nil, err
+		}
+		// TODO(sqs): handle case when multiple symbols have same moniker
+		// TODO(sqs): call r.adjustLocations to re-adjust symbols' locations
+
+		if symbol != nil {
+			return &adjustSymbolsWithDump([]codeintelapi.ResolvedSymbol{*symbol})[0], nil
+		}
+	}
+
+	return nil, nil
 }
 
 // TODO(sqs): not actually performing any adjustments right now

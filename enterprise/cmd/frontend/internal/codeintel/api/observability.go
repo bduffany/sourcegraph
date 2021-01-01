@@ -16,6 +16,7 @@ type operations struct {
 	ranges           *observation.Operation
 	references       *observation.Operation
 	symbols          *observation.Operation
+	symbol           *observation.Operation
 }
 
 func makeOperations(observationContext *observation.Context) *operations {
@@ -43,5 +44,6 @@ func makeOperations(observationContext *observation.Context) *operations {
 		ranges:           op("Ranges"),
 		references:       op("References"),
 		symbols:          op("Symbols"),
+		symbol:           op("Symbol"),
 	}
 }

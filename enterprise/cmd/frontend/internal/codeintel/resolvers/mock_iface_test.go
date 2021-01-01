@@ -38,6 +38,9 @@ type MockCodeIntelAPI struct {
 	// ReferencesFunc is an instance of a mock function object controlling
 	// the behavior of the method References.
 	ReferencesFunc *CodeIntelAPIReferencesFunc
+	// SymbolFunc is an instance of a mock function object controlling the
+	// behavior of the method Symbol.
+	SymbolFunc *CodeIntelAPISymbolFunc
 	// SymbolsFunc is an instance of a mock function object controlling the
 	// behavior of the method Symbols.
 	SymbolsFunc *CodeIntelAPISymbolsFunc
@@ -82,6 +85,11 @@ func NewMockCodeIntelAPI() *MockCodeIntelAPI {
 				return nil, api.Cursor{}, false, nil
 			},
 		},
+		SymbolFunc: &CodeIntelAPISymbolFunc{
+			defaultHook: func(context.Context, int, string, string) (*api.ResolvedSymbol, error) {
+				return nil, nil
+			},
+		},
 		SymbolsFunc: &CodeIntelAPISymbolsFunc{
 			defaultHook: func(context.Context, *graphqlbackend.SymbolFilters, int, int, int) ([]api.ResolvedSymbol, int, error) {
 				return nil, 0, nil
@@ -115,6 +123,9 @@ func NewMockCodeIntelAPIFrom(i CodeIntelAPI) *MockCodeIntelAPI {
 		},
 		ReferencesFunc: &CodeIntelAPIReferencesFunc{
 			defaultHook: i.References,
+		},
+		SymbolFunc: &CodeIntelAPISymbolFunc{
+			defaultHook: i.Symbol,
 		},
 		SymbolsFunc: &CodeIntelAPISymbolsFunc{
 			defaultHook: i.Symbols,
@@ -966,6 +977,120 @@ func (c CodeIntelAPIReferencesFuncCall) Args() []interface{} {
 // invocation.
 func (c CodeIntelAPIReferencesFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1, c.Result2, c.Result3}
+}
+
+// CodeIntelAPISymbolFunc describes the behavior when the Symbol method of
+// the parent MockCodeIntelAPI instance is invoked.
+type CodeIntelAPISymbolFunc struct {
+	defaultHook func(context.Context, int, string, string) (*api.ResolvedSymbol, error)
+	hooks       []func(context.Context, int, string, string) (*api.ResolvedSymbol, error)
+	history     []CodeIntelAPISymbolFuncCall
+	mutex       sync.Mutex
+}
+
+// Symbol delegates to the next hook function in the queue and stores the
+// parameter and result values of this invocation.
+func (m *MockCodeIntelAPI) Symbol(v0 context.Context, v1 int, v2 string, v3 string) (*api.ResolvedSymbol, error) {
+	r0, r1 := m.SymbolFunc.nextHook()(v0, v1, v2, v3)
+	m.SymbolFunc.appendCall(CodeIntelAPISymbolFuncCall{v0, v1, v2, v3, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the Symbol method of the
+// parent MockCodeIntelAPI instance is invoked and the hook queue is empty.
+func (f *CodeIntelAPISymbolFunc) SetDefaultHook(hook func(context.Context, int, string, string) (*api.ResolvedSymbol, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// Symbol method of the parent MockCodeIntelAPI instance inovkes the hook at
+// the front of the queue and discards it. After the queue is empty, the
+// default hook function is invoked for any future action.
+func (f *CodeIntelAPISymbolFunc) PushHook(hook func(context.Context, int, string, string) (*api.ResolvedSymbol, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultDefaultHook with a function that returns
+// the given values.
+func (f *CodeIntelAPISymbolFunc) SetDefaultReturn(r0 *api.ResolvedSymbol, r1 error) {
+	f.SetDefaultHook(func(context.Context, int, string, string) (*api.ResolvedSymbol, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushDefaultHook with a function that returns the given
+// values.
+func (f *CodeIntelAPISymbolFunc) PushReturn(r0 *api.ResolvedSymbol, r1 error) {
+	f.PushHook(func(context.Context, int, string, string) (*api.ResolvedSymbol, error) {
+		return r0, r1
+	})
+}
+
+func (f *CodeIntelAPISymbolFunc) nextHook() func(context.Context, int, string, string) (*api.ResolvedSymbol, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *CodeIntelAPISymbolFunc) appendCall(r0 CodeIntelAPISymbolFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of CodeIntelAPISymbolFuncCall objects
+// describing the invocations of this function.
+func (f *CodeIntelAPISymbolFunc) History() []CodeIntelAPISymbolFuncCall {
+	f.mutex.Lock()
+	history := make([]CodeIntelAPISymbolFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// CodeIntelAPISymbolFuncCall is an object that describes an invocation of
+// method Symbol on an instance of MockCodeIntelAPI.
+type CodeIntelAPISymbolFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 context.Context
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 int
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 string
+	// Arg3 is the value of the 4th argument passed to this method
+	// invocation.
+	Arg3 string
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *api.ResolvedSymbol
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c CodeIntelAPISymbolFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c CodeIntelAPISymbolFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
 }
 
 // CodeIntelAPISymbolsFunc describes the behavior when the Symbols method of
@@ -3406,6 +3531,9 @@ type MockLSIFStore struct {
 	// ReferencesFunc is an instance of a mock function object controlling
 	// the behavior of the method References.
 	ReferencesFunc *LSIFStoreReferencesFunc
+	// SymbolFunc is an instance of a mock function object controlling the
+	// behavior of the method Symbol.
+	SymbolFunc *LSIFStoreSymbolFunc
 	// SymbolsFunc is an instance of a mock function object controlling the
 	// behavior of the method Symbols.
 	SymbolsFunc *LSIFStoreSymbolsFunc
@@ -3465,6 +3593,11 @@ func NewMockLSIFStore() *MockLSIFStore {
 				return nil, nil
 			},
 		},
+		SymbolFunc: &LSIFStoreSymbolFunc{
+			defaultHook: func(context.Context, int, string, string) (*lsifstore.Symbol, error) {
+				return nil, nil
+			},
+		},
 		SymbolsFunc: &LSIFStoreSymbolsFunc{
 			defaultHook: func(context.Context, int, *graphqlbackend.SymbolFilters, int, int) ([]lsifstore.Symbol, int, error) {
 				return nil, 0, nil
@@ -3506,6 +3639,9 @@ func NewMockLSIFStoreFrom(i LSIFStore) *MockLSIFStore {
 		},
 		ReferencesFunc: &LSIFStoreReferencesFunc{
 			defaultHook: i.References,
+		},
+		SymbolFunc: &LSIFStoreSymbolFunc{
+			defaultHook: i.Symbol,
 		},
 		SymbolsFunc: &LSIFStoreSymbolsFunc{
 			defaultHook: i.Symbols,
@@ -4702,6 +4838,120 @@ func (c LSIFStoreReferencesFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c LSIFStoreReferencesFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// LSIFStoreSymbolFunc describes the behavior when the Symbol method of the
+// parent MockLSIFStore instance is invoked.
+type LSIFStoreSymbolFunc struct {
+	defaultHook func(context.Context, int, string, string) (*lsifstore.Symbol, error)
+	hooks       []func(context.Context, int, string, string) (*lsifstore.Symbol, error)
+	history     []LSIFStoreSymbolFuncCall
+	mutex       sync.Mutex
+}
+
+// Symbol delegates to the next hook function in the queue and stores the
+// parameter and result values of this invocation.
+func (m *MockLSIFStore) Symbol(v0 context.Context, v1 int, v2 string, v3 string) (*lsifstore.Symbol, error) {
+	r0, r1 := m.SymbolFunc.nextHook()(v0, v1, v2, v3)
+	m.SymbolFunc.appendCall(LSIFStoreSymbolFuncCall{v0, v1, v2, v3, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the Symbol method of the
+// parent MockLSIFStore instance is invoked and the hook queue is empty.
+func (f *LSIFStoreSymbolFunc) SetDefaultHook(hook func(context.Context, int, string, string) (*lsifstore.Symbol, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// Symbol method of the parent MockLSIFStore instance inovkes the hook at
+// the front of the queue and discards it. After the queue is empty, the
+// default hook function is invoked for any future action.
+func (f *LSIFStoreSymbolFunc) PushHook(hook func(context.Context, int, string, string) (*lsifstore.Symbol, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultDefaultHook with a function that returns
+// the given values.
+func (f *LSIFStoreSymbolFunc) SetDefaultReturn(r0 *lsifstore.Symbol, r1 error) {
+	f.SetDefaultHook(func(context.Context, int, string, string) (*lsifstore.Symbol, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushDefaultHook with a function that returns the given
+// values.
+func (f *LSIFStoreSymbolFunc) PushReturn(r0 *lsifstore.Symbol, r1 error) {
+	f.PushHook(func(context.Context, int, string, string) (*lsifstore.Symbol, error) {
+		return r0, r1
+	})
+}
+
+func (f *LSIFStoreSymbolFunc) nextHook() func(context.Context, int, string, string) (*lsifstore.Symbol, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *LSIFStoreSymbolFunc) appendCall(r0 LSIFStoreSymbolFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of LSIFStoreSymbolFuncCall objects describing
+// the invocations of this function.
+func (f *LSIFStoreSymbolFunc) History() []LSIFStoreSymbolFuncCall {
+	f.mutex.Lock()
+	history := make([]LSIFStoreSymbolFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// LSIFStoreSymbolFuncCall is an object that describes an invocation of
+// method Symbol on an instance of MockLSIFStore.
+type LSIFStoreSymbolFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 context.Context
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 int
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 string
+	// Arg3 is the value of the 4th argument passed to this method
+	// invocation.
+	Arg3 string
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *lsifstore.Symbol
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c LSIFStoreSymbolFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c LSIFStoreSymbolFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 

@@ -64,6 +64,7 @@ type LSIFStore interface {
 	PackageInformation(ctx context.Context, bundleID int, path string, packageInformationID string) (lsifstore.PackageInformationData, bool, error)
 	Packages(ctx context.Context, bundleID int, prefix string, skip, take int) ([]lsifstore.Package, int, error)
 	Symbols(ctx context.Context, bundleID int, filters *gql.SymbolFilters, skip, take int) ([]lsifstore.Symbol, int, error)
+	Symbol(ctx context.Context, bundleID int, scheme, identifier string) (*lsifstore.Symbol, error)
 }
 
 type GitserverClient interface {
