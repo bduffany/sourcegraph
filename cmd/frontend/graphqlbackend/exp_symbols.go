@@ -142,7 +142,7 @@ func (r *ExpSymbol) Children(args *ExpSymbolsArgs) ExpSymbolConnection {
 
 	children := make([]*ExpSymbol, 0, len(r.sym.Children()))
 	for _, childSymbol := range r.sym.Children() {
-		if args != nil && !args.Filters.Internals {
+		if args.Filters != nil && !args.Filters.Internals {
 			hasExportedTag := false
 			for _, tag := range childSymbol.Tags() {
 				if tag == wantExportedTag {
