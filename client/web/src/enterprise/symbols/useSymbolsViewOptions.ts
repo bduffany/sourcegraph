@@ -6,7 +6,10 @@ export interface SymbolsViewOptionsProps {
     viewOptions: SymbolsViewOptions
 }
 
-export interface SymbolsViewOptions extends GQL.ISymbolFilters {}
+export interface SymbolsViewOptions {
+    internals: GQL.ISymbolFilters['internals']
+    externals: boolean
+}
 
 const DEFAULT_OPTIONS: SymbolsViewOptions = {
     externals: true,

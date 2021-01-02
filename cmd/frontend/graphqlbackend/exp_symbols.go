@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 
+	protocol "github.com/sourcegraph/lsif-protocol"
 	"github.com/sourcegraph/sourcegraph/cmd/frontend/graphqlbackend/graphqlutil"
 )
 
@@ -77,6 +78,8 @@ func (r *ExpSymbol) Detail() *string { return r.sym.Detail() }
 
 func (r *ExpSymbol) Kind() string/* enum SymbolKind */ { return r.sym.Kind() }
 
+func (r *ExpSymbol) Tags() []string/* enum SymbolTag */ { return r.sym.Tags() }
+
 func (r *ExpSymbol) Monikers() []MonikerResolver { return r.sym.Monikers() }
 
 func (r *ExpSymbol) Definitions(ctx context.Context) (LocationConnectionResolver, error) {
@@ -120,15 +123,44 @@ func (r *ExpSymbol) CanonicalURL() (string, error) {
 	return r.url(prefix), nil
 }
 
-func (r *ExpSymbol) Children() []*ExpSymbol {
-	children := make([]*ExpSymbol, len(r.sym.Children()))
-	for i, childSymbol := range r.sym.Children() {
-		children[i] = &ExpSymbol{
-			sym:  childSymbol,
+func (r *ExpSymbol) RootAncestor() *ExpSymbol {
+	root := r.sym.RootAncestor()
+	if root != nil {
+		return &ExpSymbol{
+			sym:  root,
 			tree: r.tree,
 		}
 	}
-	return children
+	return nil
+}
+
+var wantExportedTag = strings.ToUpper(protocol.Exported.String())
+
+func (r *ExpSymbol) Children(args *ExpSymbolsArgs) ExpSymbolConnection {
+
+	// TODO(sqs): support args
+
+	children := make([]*ExpSymbol, 0, len(r.sym.Children()))
+	for _, childSymbol := range r.sym.Children() {
+		if args != nil && !args.Filters.Internals {
+			hasExportedTag := false
+			for _, tag := range childSymbol.Tags() {
+				if tag == wantExportedTag {
+					hasExportedTag = true
+					break
+				}
+			}
+			if !hasExportedTag {
+				continue
+			}
+		}
+
+		children = append(children, &ExpSymbol{
+			sym:  childSymbol,
+			tree: r.tree,
+		})
+	}
+	return ExpSymbolConnection(children)
 }
 
 func (r *ExpSymbol) EditCommits(ctx context.Context) (*gitCommitConnectionResolver, error) {

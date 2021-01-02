@@ -27,7 +27,7 @@ export interface SymbolsSidebarOptionsSetterProps {
 
 export const SymbolsArea: React.FunctionComponent<Props> = ({
     match,
-    useBreadcrumb,
+    useBreadcrumb: useBreadcrumb,
     repoHeaderContributionsLifecycleProps,
     history,
     ...props
@@ -38,7 +38,9 @@ export const SymbolsArea: React.FunctionComponent<Props> = ({
         return () => rawSetSidebarOptions(null)
     }, [])
 
-    useBreadcrumb(useMemo(() => ({ key: 'symbols', element: <Link to={match.url}>Symbols</Link> }), [match.url]))
+    useBreadcrumb = useBreadcrumb(
+        useMemo(() => ({ key: 'symbols', element: <Link to={match.url}>Symbols</Link> }), [match.url])
+    ).useBreadcrumb
 
     const { viewOptions, toggleURLs } = useSymbolsViewOptions(props)
 

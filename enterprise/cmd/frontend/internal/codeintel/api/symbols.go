@@ -48,7 +48,7 @@ func (api *CodeIntelAPI) Symbols(ctx context.Context, filters *gql.SymbolFilters
 }
 
 // Symbol returns the
-func (api *CodeIntelAPI) Symbol(ctx context.Context, uploadID int, scheme, identifier string) (_ *ResolvedSymbol, err error) {
+func (api *CodeIntelAPI) Symbol(ctx context.Context, uploadID int, scheme, identifier string) (_ *ResolvedSymbol, _ []int, err error) {
 	ctx, endObservation := api.operations.symbols.With(ctx, &err, observation.Args{LogFields: []log.Field{
 		log.Int("uploadID", uploadID),
 		log.String("scheme", scheme),
@@ -58,22 +58,22 @@ func (api *CodeIntelAPI) Symbol(ctx context.Context, uploadID int, scheme, ident
 
 	dump, exists, err := api.dbStore.GetDumpByID(ctx, uploadID)
 	if err != nil {
-		return nil, errors.Wrap(err, "store.GetDumpByID")
+		return nil, nil, errors.Wrap(err, "store.GetDumpByID")
 	}
 	if !exists {
-		return nil, ErrMissingDump
+		return nil, nil, ErrMissingDump
 	}
 
-	symbol, err := api.lsifStore.Symbol(ctx, dump.ID, scheme, identifier)
-	if symbol == nil || err != nil {
+	root, descentPath, err := api.lsifStore.Symbol(ctx, dump.ID, scheme, identifier)
+	if root == nil || err != nil {
 		if err == lsifstore.ErrNotFound {
 			log15.Warn("Bundle does not exist")
-			return nil, nil
+			return nil, nil, nil
 		}
-		return nil, errors.Wrap(err, "bundleClient.Symbol")
+		return nil, nil, errors.Wrap(err, "bundleClient.Symbol")
 	}
 
-	return &resolveSymbolsWithDump(dump, []lsifstore.Symbol{*symbol})[0], nil
+	return &resolveSymbolsWithDump(dump, []lsifstore.Symbol{*root})[0], descentPath, nil
 }
 
 func resolveSymbolsWithDump(dump store.Dump, roots []lsifstore.Symbol) []ResolvedSymbol {

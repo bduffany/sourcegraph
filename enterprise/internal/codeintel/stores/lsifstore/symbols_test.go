@@ -82,6 +82,59 @@ func TestBuildSymbolTree(t *testing.T) {
 	}
 }
 
+func TestFindPathToSymbolInTree(t *testing.T) {
+	matchFn := func(symbol *Symbol) bool { return symbol.Text == "*" }
+	tests := []struct {
+		root   Symbol
+		want   []int
+		wantOK bool
+	}{
+		{
+			root:   Symbol{Children: []Symbol{{}, {}}},
+			wantOK: false,
+		},
+		{
+			root:   Symbol{SymbolData: protocol.SymbolData{Text: "*"}},
+			want:   nil,
+			wantOK: true,
+		},
+		{
+			root: Symbol{
+				Children: []Symbol{
+					{},
+					{
+						Children: []Symbol{
+							{}, {},
+							{Children: []Symbol{{}, {}, {}}},
+							{
+								Children: []Symbol{
+									{}, {},
+									{SymbolData: protocol.SymbolData{Text: "*"}},
+									{},
+								},
+							},
+						},
+					},
+				},
+			},
+			want:   []int{1, 3, 2},
+			wantOK: true,
+		},
+	}
+
+	for i, test := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			got, ok := findPathToSymbolInTree(&test.root, matchFn)
+			if ok != test.wantOK {
+				t.Errorf("got ok %v, want %v", ok, test.wantOK)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("unexpected tree (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestTrimSymbolTree(t *testing.T) {
 	tree := []Symbol{
 		{

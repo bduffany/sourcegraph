@@ -59,6 +59,13 @@ type AdjustedSymbol struct {
 	Dump     store.Dump
 }
 
+func (s AdjustedSymbol) Descendant(path []int) AdjustedSymbol {
+	for _, index := range path {
+		s = s.Children[index]
+	}
+	return s
+}
+
 // QueryResolver is the main interface to bundle-related operations exposed to the GraphQL API. This
 // resolver consolidates the logic for bundle operations and is not itself concerned with GraphQL/API
 // specifics (auth, validation, marshaling, etc.). This resolver is wrapped by a symmetrics resolver
@@ -71,7 +78,7 @@ type QueryResolver interface {
 	Diagnostics(ctx context.Context, limit int) ([]AdjustedDiagnostic, int, error)
 	Packages(ctx context.Context, limit int) ([]AdjustedPackage, int, error)
 	Symbols(ctx context.Context, filters *gql.SymbolFilters, limit int) ([]AdjustedSymbol, int, error)
-	Symbol(ctx context.Context, scheme, identifier string) (*AdjustedSymbol, error)
+	Symbol(ctx context.Context, scheme, identifier string) (*AdjustedSymbol, []int, error)
 }
 
 type queryResolver struct {
@@ -523,7 +530,7 @@ func (r *queryResolver) Symbols(ctx context.Context, filters *gql.SymbolFilters,
 	return adjustedSymbols, totalCount, nil
 }
 
-func (r *queryResolver) Symbol(ctx context.Context, scheme, identifier string) (_ *AdjustedSymbol, err error) {
+func (r *queryResolver) Symbol(ctx context.Context, scheme, identifier string) (_ *AdjustedSymbol, _ []int, err error) {
 	ctx, endObservation := observeResolver(ctx, &err, "Symbol", r.operations.symbol, slowSymbolsRequestThreshold, observation.Args{
 		LogFields: []log.Field{
 			log.Int("repositoryID", r.repositoryID),
@@ -536,23 +543,23 @@ func (r *queryResolver) Symbol(ctx context.Context, scheme, identifier string) (
 	defer endObservation()
 
 	if r.path != "" {
-		return nil, errors.New("unable to get symbol for non-root")
+		return nil, nil, errors.New("unable to get symbol for non-root")
 	}
 
 	for i := range r.uploads {
-		symbol, err := r.codeIntelAPI.Symbol(ctx, r.uploads[i].ID, scheme, identifier)
+		symbol, treePath, err := r.codeIntelAPI.Symbol(ctx, r.uploads[i].ID, scheme, identifier)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		// TODO(sqs): handle case when multiple symbols have same moniker
 		// TODO(sqs): call r.adjustLocations to re-adjust symbols' locations
 
 		if symbol != nil {
-			return &adjustSymbolsWithDump([]codeintelapi.ResolvedSymbol{*symbol})[0], nil
+			return &adjustSymbolsWithDump([]codeintelapi.ResolvedSymbol{*symbol})[0], treePath, nil
 		}
 	}
 
-	return nil, nil
+	return nil, nil, nil
 }
 
 // TODO(sqs): not actually performing any adjustments right now

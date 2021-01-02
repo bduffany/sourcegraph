@@ -76,8 +76,8 @@ func NewMockQueryResolver() *MockQueryResolver {
 			},
 		},
 		SymbolFunc: &QueryResolverSymbolFunc{
-			defaultHook: func(context.Context, string, string) (*resolvers.AdjustedSymbol, error) {
-				return nil, nil
+			defaultHook: func(context.Context, string, string) (*resolvers.AdjustedSymbol, []int, error) {
+				return nil, nil, nil
 			},
 		},
 		SymbolsFunc: &QueryResolverSymbolsFunc{
@@ -808,23 +808,23 @@ func (c QueryResolverReferencesFuncCall) Results() []interface{} {
 // QueryResolverSymbolFunc describes the behavior when the Symbol method of
 // the parent MockQueryResolver instance is invoked.
 type QueryResolverSymbolFunc struct {
-	defaultHook func(context.Context, string, string) (*resolvers.AdjustedSymbol, error)
-	hooks       []func(context.Context, string, string) (*resolvers.AdjustedSymbol, error)
+	defaultHook func(context.Context, string, string) (*resolvers.AdjustedSymbol, []int, error)
+	hooks       []func(context.Context, string, string) (*resolvers.AdjustedSymbol, []int, error)
 	history     []QueryResolverSymbolFuncCall
 	mutex       sync.Mutex
 }
 
 // Symbol delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockQueryResolver) Symbol(v0 context.Context, v1 string, v2 string) (*resolvers.AdjustedSymbol, error) {
-	r0, r1 := m.SymbolFunc.nextHook()(v0, v1, v2)
-	m.SymbolFunc.appendCall(QueryResolverSymbolFuncCall{v0, v1, v2, r0, r1})
-	return r0, r1
+func (m *MockQueryResolver) Symbol(v0 context.Context, v1 string, v2 string) (*resolvers.AdjustedSymbol, []int, error) {
+	r0, r1, r2 := m.SymbolFunc.nextHook()(v0, v1, v2)
+	m.SymbolFunc.appendCall(QueryResolverSymbolFuncCall{v0, v1, v2, r0, r1, r2})
+	return r0, r1, r2
 }
 
 // SetDefaultHook sets function that is called when the Symbol method of the
 // parent MockQueryResolver instance is invoked and the hook queue is empty.
-func (f *QueryResolverSymbolFunc) SetDefaultHook(hook func(context.Context, string, string) (*resolvers.AdjustedSymbol, error)) {
+func (f *QueryResolverSymbolFunc) SetDefaultHook(hook func(context.Context, string, string) (*resolvers.AdjustedSymbol, []int, error)) {
 	f.defaultHook = hook
 }
 
@@ -832,7 +832,7 @@ func (f *QueryResolverSymbolFunc) SetDefaultHook(hook func(context.Context, stri
 // Symbol method of the parent MockQueryResolver instance inovkes the hook
 // at the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *QueryResolverSymbolFunc) PushHook(hook func(context.Context, string, string) (*resolvers.AdjustedSymbol, error)) {
+func (f *QueryResolverSymbolFunc) PushHook(hook func(context.Context, string, string) (*resolvers.AdjustedSymbol, []int, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -840,21 +840,21 @@ func (f *QueryResolverSymbolFunc) PushHook(hook func(context.Context, string, st
 
 // SetDefaultReturn calls SetDefaultDefaultHook with a function that returns
 // the given values.
-func (f *QueryResolverSymbolFunc) SetDefaultReturn(r0 *resolvers.AdjustedSymbol, r1 error) {
-	f.SetDefaultHook(func(context.Context, string, string) (*resolvers.AdjustedSymbol, error) {
-		return r0, r1
+func (f *QueryResolverSymbolFunc) SetDefaultReturn(r0 *resolvers.AdjustedSymbol, r1 []int, r2 error) {
+	f.SetDefaultHook(func(context.Context, string, string) (*resolvers.AdjustedSymbol, []int, error) {
+		return r0, r1, r2
 	})
 }
 
 // PushReturn calls PushDefaultHook with a function that returns the given
 // values.
-func (f *QueryResolverSymbolFunc) PushReturn(r0 *resolvers.AdjustedSymbol, r1 error) {
-	f.PushHook(func(context.Context, string, string) (*resolvers.AdjustedSymbol, error) {
-		return r0, r1
+func (f *QueryResolverSymbolFunc) PushReturn(r0 *resolvers.AdjustedSymbol, r1 []int, r2 error) {
+	f.PushHook(func(context.Context, string, string) (*resolvers.AdjustedSymbol, []int, error) {
+		return r0, r1, r2
 	})
 }
 
-func (f *QueryResolverSymbolFunc) nextHook() func(context.Context, string, string) (*resolvers.AdjustedSymbol, error) {
+func (f *QueryResolverSymbolFunc) nextHook() func(context.Context, string, string) (*resolvers.AdjustedSymbol, []int, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -901,7 +901,10 @@ type QueryResolverSymbolFuncCall struct {
 	Result0 *resolvers.AdjustedSymbol
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
-	Result1 error
+	Result1 []int
+	// Result2 is the value of the 3rd result returned from this method
+	// invocation.
+	Result2 error
 }
 
 // Args returns an interface slice containing the arguments of this
@@ -913,7 +916,7 @@ func (c QueryResolverSymbolFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c QueryResolverSymbolFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
+	return []interface{}{c.Result0, c.Result1, c.Result2}
 }
 
 // QueryResolverSymbolsFunc describes the behavior when the Symbols method

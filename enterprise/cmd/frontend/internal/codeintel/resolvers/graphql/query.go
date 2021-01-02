@@ -140,13 +140,21 @@ func (r *QueryResolver) Symbols(ctx context.Context, args *gql.LSIFSymbolsArgs) 
 		// TODO(sqs): hacky
 		return NewQueryResolver(r.resolver.(tmpWithPath).TmpWithPath(path), r.locationResolver).(*QueryResolver), nil
 	}
-	return NewSymbolConnectionResolver(symbols, totalCount, r.locationResolver, newQueryResolver), nil
+	return NewSymbolConnectionResolver(symbols, nil, totalCount, r.locationResolver, newQueryResolver), nil
 }
 
 func (r *QueryResolver) Symbol(ctx context.Context, args *gql.LSIFSymbolArgs) (gql.SymbolResolver, error) {
-	symbol, err := r.resolver.Symbol(ctx, args.Moniker.Scheme, args.Moniker.Identifier)
-	if symbol == nil || err != nil {
+	rootSymbol, treePath, err := r.resolver.Symbol(ctx, args.Moniker.Scheme, args.Moniker.Identifier)
+	if rootSymbol == nil || err != nil {
 		return nil, err
+	}
+
+	var symbol resolvers.AdjustedSymbol
+	if len(treePath) == 0 {
+		symbol = *rootSymbol
+		rootSymbol = nil
+	} else {
+		symbol = rootSymbol.Descendant(treePath)
 	}
 
 	newQueryResolver := func(ctx context.Context, path string) (*QueryResolver, error) {
@@ -156,5 +164,5 @@ func (r *QueryResolver) Symbol(ctx context.Context, args *gql.LSIFSymbolArgs) (g
 		// TODO(sqs): hacky
 		return NewQueryResolver(r.resolver.(tmpWithPath).TmpWithPath(path), r.locationResolver).(*QueryResolver), nil
 	}
-	return NewSymbolResolver(*symbol, r.locationResolver, newQueryResolver), nil
+	return NewSymbolResolver(symbol, rootSymbol, r.locationResolver, newQueryResolver), nil
 }

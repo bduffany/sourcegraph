@@ -490,7 +490,7 @@ func (s *Store) Symbols(ctx context.Context, bundleID int, filters *gql.SymbolFi
 }
 
 // Symbol looks up a symbol by its moniker.
-func (s *Store) Symbol(ctx context.Context, bundleID int, scheme, identifier string) (_ *Symbol, err error) {
+func (s *Store) Symbol(ctx context.Context, bundleID int, scheme, identifier string) (_ *Symbol, _ []int, err error) {
 	ctx, endObservation := s.operations.symbols.With(ctx, &err, observation.Args{LogFields: []log.Field{
 		log.Int("bundleID", bundleID),
 		log.String("scheme", scheme),
@@ -498,22 +498,26 @@ func (s *Store) Symbol(ctx context.Context, bundleID int, scheme, identifier str
 	}})
 	defer endObservation(1, observation.Args{})
 
-	symbols, _, err := s.Symbols(ctx, bundleID, nil, 0, 0)
+	rootSymbols, _, err := s.Symbols(ctx, bundleID, nil, 0, 0)
 	if err != nil {
-		return nil, pkgerrors.Wrap(err, "store.Symbols")
+		return nil, nil, pkgerrors.Wrap(err, "store.Symbols")
 	}
 
-	var found *Symbol
-	WalkSymbolTree(&Symbol{Children: symbols}, func(symbol *Symbol) {
-		for _, m := range symbol.Monikers {
-			if m.Scheme == scheme && m.Identifier==identifier {
-				if found
-				found=symbol
+	for _, root := range rootSymbols {
+		treePath, ok := findPathToSymbolInTree(&root, func(symbol *Symbol) bool {
+			for _, m := range symbol.Monikers {
+				if m.Scheme == scheme && m.Identifier == identifier {
+					return true
+				}
 			}
+			return false
+		})
+		if ok {
+			return &root, treePath, nil
 		}
-	})
+	}
 
-	return found, nil
+	return nil, nil, nil
 }
 
 // hover returns the hover text locations for the given range.

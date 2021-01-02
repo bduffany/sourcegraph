@@ -326,12 +326,14 @@ type SymbolConnectionResolver interface {
 type SymbolResolver interface {
 	Text() string
 	Detail() *string
-	Kind() string /* enum SymbolKind */
+	Kind() string   /* enum SymbolKind */
+	Tags() []string /* enum SymbolTag */
 	Monikers() []MonikerResolver
 	Definitions(ctx context.Context) (LocationConnectionResolver, error)
 	DefinitionsFullRanges(ctx context.Context) (LocationConnectionResolver, error)
 	References(ctx context.Context) (LocationConnectionResolver, error)
 	Hover(context.Context) (HoverResolver, error)
+	RootAncestor() SymbolResolver
 	Children() []SymbolResolver
 	Location() (path string, line, end int)
 }

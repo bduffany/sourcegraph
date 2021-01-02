@@ -20,7 +20,7 @@ type CodeIntelAPI interface {
 	Diagnostics(ctx context.Context, prefix string, uploadID, limit, offset int) ([]api.ResolvedDiagnostic, int, error)
 	Packages(ctx context.Context, prefix string, uploadID, limit, offset int) ([]api.ResolvedPackage, int, error)
 	Symbols(ctx context.Context, filters *gql.SymbolFilters, uploadID, limit, offset int) ([]api.ResolvedSymbol, int, error)
-	Symbol(ctx context.Context, uploadID int, scheme, identifier string) (*api.ResolvedSymbol, error)
+	Symbol(ctx context.Context, uploadID int, scheme, identifier string) (*api.ResolvedSymbol, []int, error)
 }
 
 type DBStore interface {

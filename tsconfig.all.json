@@ -2,8 +2,6 @@
   "extends": "./tsconfig.json",
   "references": [
     { "path": "client/shared" },
-    { "path": "client/branded" },
     { "path": "client/web" },
-    { "path": "schema" },
   ],
 }

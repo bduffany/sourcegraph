@@ -14,7 +14,7 @@ import {
     RepositoryExpSymbolsResult,
 } from '../../graphql-operations'
 import { RepoRevisionContainerContext } from '../../repo/RepoRevisionContainer'
-import { ExpSymbolDetailGQLFragment } from './SymbolDetail'
+import { SymbolHoverGQLFragment } from './SymbolHover'
 import { SettingsCascadeProps } from '../../../../shared/src/settings/settings'
 import { ContainerSymbolsList } from './ContainerSymbolsList'
 import { SymbolsSidebarOptionsSetterProps } from './SymbolsArea'
@@ -31,14 +31,18 @@ const RepositoryExpSymbolsGQLFragment = gql`
         }
         url
         children {
-            ...ExpSymbolDetailFields
-            children {
-                ...ExpSymbolDetailFields
+            nodes {
+                ...SymbolHoverFields
+                children {
+                    nodes {
+                        ...SymbolHoverFields
+                    }
+                }
             }
         }
-        ...ExpSymbolDetailFields
+        ...SymbolHoverFields
     }
-    ${ExpSymbolDetailGQLFragment}
+    ${SymbolHoverGQLFragment}
 `
 
 const queryRepositorySymbols = (vars: RepositoryExpSymbolsVariables): Observable<RepositoryExpSymbolsFields[] | null> =>

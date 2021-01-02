@@ -6216,6 +6216,12 @@ input MonikerInput {
     identifier: String!
 }
 
+enum SymbolTag {
+    DEPRECATED
+    EXPORTED
+    UNEXPORTED
+}
+
 """
 A symbol.
 """
@@ -6223,6 +6229,7 @@ type ExpSymbol {
     text: String!
     detail: String
     kind: SymbolKind!
+    tags: [SymbolTag!]!
 
     monikers: [Moniker!]!
 
@@ -6248,14 +6255,15 @@ type ExpSymbol {
     """
     canonicalURL: String!
 
-    children: [ExpSymbol!]!
+    rootAncestor: ExpSymbol
+
+    children(filters: SymbolFilters): ExpSymbolConnection!
 
     editCommits: GitCommitConnection
 }
 
 input SymbolFilters {
     internals: Boolean!
-    externals: Boolean!
 }
 
 type Moniker {

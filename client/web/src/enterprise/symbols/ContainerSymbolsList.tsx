@@ -1,14 +1,29 @@
-import React from 'react'
 import H from 'history'
+import React from 'react'
 import { Link } from 'react-router-dom'
 import { Markdown } from '../../../../shared/src/components/Markdown'
 import { SymbolIcon } from '../../../../shared/src/symbols/SymbolIcon'
 import { renderMarkdown } from '../../../../shared/src/util/markdown'
-import { RepositoryExpSymbolsFields } from '../../graphql-operations'
+import { ContainerSymbolsListSymbolFields } from '../../graphql-operations'
 import { symbolHoverSynopsisMarkdown } from './symbolInfo'
+import { gql } from '../../../../shared/src/graphql/graphql'
+
+export const ContainerSymbolsListSymbolGQLFragment = gql`
+    fragment ContainerSymbolsListSymbolFields on ExpSymbol {
+        text
+        detail
+        kind
+        url
+        hover {
+            markdown {
+                text
+            }
+        }
+    }
+`
 
 const Item: React.FunctionComponent<{
-    symbol: RepositoryExpSymbolsFields
+    symbol: ContainerSymbolsListSymbolFields
     tag?: 'li'
     className?: string
     history: H.History
@@ -37,7 +52,7 @@ const Item: React.FunctionComponent<{
 }
 
 interface Props {
-    symbols: RepositoryExpSymbolsFields[]
+    symbols: ContainerSymbolsListSymbolFields[]
     history: H.History
 }
 

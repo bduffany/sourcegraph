@@ -35,9 +35,25 @@ func buildSymbolTree(datas []SymbolData, dumpID int) (roots []Symbol) {
 
 func WalkSymbolTree(root *Symbol, walkFn func(symbol *Symbol)) {
 	walkFn(root)
+
 	for i := range root.Children {
 		WalkSymbolTree(&root.Children[i], walkFn)
 	}
+}
+
+func findPathToSymbolInTree(root *Symbol, matchFn func(symbol *Symbol) bool) ([]int, bool) {
+	if matchFn(root) {
+		return nil, true
+	}
+
+	for i := range root.Children {
+		path, ok := findPathToSymbolInTree(&root.Children[i], matchFn)
+		if ok {
+			return append([]int{i}, path...), true
+		}
+	}
+
+	return nil, false
 }
 
 func associateMoniker(symbol *Symbol, allMonikers []MonikerLocations) {

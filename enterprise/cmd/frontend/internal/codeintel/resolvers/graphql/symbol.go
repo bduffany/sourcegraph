@@ -16,14 +16,16 @@ type newQueryResolver func(ctx context.Context, path string) (*QueryResolver, er
 
 type SymbolResolver struct {
 	symbol resolvers.AdjustedSymbol
+	root   *resolvers.AdjustedSymbol
 
 	locationResolver *CachedLocationResolver
 	newQueryResolver newQueryResolver
 }
 
-func NewSymbolResolver(symbol resolvers.AdjustedSymbol, locationResolver *CachedLocationResolver, newQueryResolver newQueryResolver) gql.SymbolResolver {
+func NewSymbolResolver(symbol resolvers.AdjustedSymbol, root *resolvers.AdjustedSymbol, locationResolver *CachedLocationResolver, newQueryResolver newQueryResolver) gql.SymbolResolver {
 	return &SymbolResolver{
 		symbol:           symbol,
+		root:             root,
 		locationResolver: locationResolver,
 		newQueryResolver: newQueryResolver,
 	}
@@ -42,6 +44,14 @@ func (r *SymbolResolver) Detail() *string {
 
 func (r *SymbolResolver) Kind() string /* enum SymbolKind */ {
 	return strings.ToUpper(lsp.SymbolKind(r.symbol.Kind).String())
+}
+
+func (r *SymbolResolver) Tags() []string /* enum SymbolTag */ {
+	tags := make([]string, len(r.symbol.Tags))
+	for i, tag := range r.symbol.Tags {
+		tags[i] = strings.ToUpper(tag.String())
+	}
+	return tags
 }
 
 func (r *SymbolResolver) Monikers() []gql.MonikerResolver {
@@ -118,14 +128,17 @@ func (r *SymbolResolver) Hover(ctx context.Context) (gql.HoverResolver, error) {
 	})
 }
 
+func (r *SymbolResolver) RootAncestor() gql.SymbolResolver {
+	if r.root == nil {
+		return r
+	}
+	return NewSymbolResolver(*r.root, nil, r.locationResolver, r.newQueryResolver)
+}
+
 func (r *SymbolResolver) Children() []gql.SymbolResolver {
 	children := make([]gql.SymbolResolver, len(r.symbol.Children))
 	for i, childSymbol := range r.symbol.Children {
-		children[i] = &SymbolResolver{
-			symbol:           childSymbol,
-			locationResolver: r.locationResolver,
-			newQueryResolver: r.newQueryResolver,
-		}
+		children[i] = NewSymbolResolver(childSymbol, r.root, r.locationResolver, r.newQueryResolver)
 	}
 	return children
 }

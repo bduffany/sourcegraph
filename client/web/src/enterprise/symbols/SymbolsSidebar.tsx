@@ -1,12 +1,38 @@
 import React from 'react'
 import { Link, NavLink } from 'react-router-dom'
+import { gql } from '../../../../shared/src/graphql/graphql'
 import { SymbolIcon } from '../../../../shared/src/symbols/SymbolIcon'
-import { ExpSymbolDetailFields } from '../../graphql-operations'
+import { SymbolsSidebarContainerSymbolFields } from '../../graphql-operations'
+
+export const SymbolsSidebarContainerSymbolGQLFragment = gql`
+    fragment SymbolsSidebarContainerSymbolFields on ExpSymbol {
+        ...SymbolsSidebarCommonSymbolFields
+        children(filters: $filters) {
+            nodes {
+                ...SymbolsSidebarCommonSymbolFields
+                children(filters: $filters) {
+                    nodes {
+                        ...SymbolsSidebarCommonSymbolFields
+                    }
+                }
+            }
+        }
+    }
+
+    fragment SymbolsSidebarCommonSymbolFields on ExpSymbol {
+        text
+        detail
+        kind
+        url
+    }
+`
+
+type SymbolItem =
+    | SymbolsSidebarContainerSymbolFields['children']['nodes'][0]
+    | SymbolsSidebarContainerSymbolFields['children']['nodes'][0]['children']['nodes'][0]
 
 export interface SymbolsSidebarOptions {
-    containerSymbol: ExpSymbolDetailFields & {
-        children: (ExpSymbolDetailFields & { children: ExpSymbolDetailFields[] })[]
-    }
+    containerSymbol: SymbolsSidebarContainerSymbolFields
 }
 
 const commonNavLinkProps: Pick<
@@ -19,7 +45,7 @@ const commonNavLinkProps: Pick<
 }
 
 const Item: React.FunctionComponent<{
-    symbol: ExpSymbolDetailFields & { children: ExpSymbolDetailFields[] }
+    symbol: SymbolItem
     level: number
     tag?: 'li'
     className?: string
@@ -38,14 +64,14 @@ const Item: React.FunctionComponent<{
             <SymbolIcon kind={symbol.kind} className="mr-1 flex-shrink-0 icon-inline" />
             <span className="text-truncate">{symbol.text}</span>
         </NavLink>
-        {symbol.children?.length > 0 && (
-            <ItemList symbols={symbol.children} level={level + 1} itemClassName="pl-2 pr-3 py-1" />
+        {'children' in symbol && symbol.children.nodes.length > 0 && (
+            <ItemList symbols={symbol.children.nodes} level={level + 1} itemClassName="pl-2 pr-3 py-1" />
         )}
     </Tag>
 )
 
 const ItemList: React.FunctionComponent<{
-    symbols: (ExpSymbolDetailFields & { children: ExpSymbolDetailFields[] })[]
+    symbols: SymbolItem[]
     level: number
     itemClassName?: string
 }> = ({ symbols, level, itemClassName = '' }) => (
@@ -77,8 +103,8 @@ export const SymbolsSidebar: React.FunctionComponent<Props> = ({ containerSymbol
             </h2>
         </header>
 
-        {containerSymbol.children.length > 0 ? (
-            <ItemList symbols={containerSymbol.children} itemClassName="pl-2 pr-3 py-1" level={0} />
+        {containerSymbol.children.nodes.length > 0 ? (
+            <ItemList symbols={containerSymbol.children.nodes} itemClassName="pl-2 pr-3 py-1" level={0} />
         ) : (
             <p className="text-muted">No child symbols</p>
         )}
