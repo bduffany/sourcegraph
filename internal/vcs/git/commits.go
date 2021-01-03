@@ -244,10 +244,6 @@ func commitLogArgs(initialArgs []string, opt CommitsOptions) (args []string, err
 		args = append(args, "--fixed-strings", "--regexp-ignore-case", "--grep="+opt.MessageQuery)
 	}
 
-	if opt.Range != "" {
-		args = append(args, opt.Range)
-	}
-
 	if len(opt.LineRanges) > 0 {
 		args = append(args, "--no-patch")
 	}
@@ -256,6 +252,10 @@ func commitLogArgs(initialArgs []string, opt CommitsOptions) (args []string, err
 			return nil, err
 		}
 		args = append(args, "-L", lineRange)
+	}
+
+	if opt.Range != "" {
+		args = append(args, opt.Range)
 	}
 
 	if opt.Path != "" {

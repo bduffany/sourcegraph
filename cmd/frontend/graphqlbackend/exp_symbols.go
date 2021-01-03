@@ -187,8 +187,9 @@ func (r *ExpSymbol) EditCommits(ctx context.Context) (*gitCommitConnectionResolv
 
 	first := int32(5)
 	return &gitCommitConnectionResolver{
-		lineRanges: lineRanges,
-		first:      &first,
+		revisionRange: string(r.tree.commit.oid),
+		lineRanges:    lineRanges,
+		first:         &first,
 		// TODO(sqs): assumes all locations are from same repo, probably safe?
 		repo: locations[0].Resource().commit.repoResolver,
 	}, nil

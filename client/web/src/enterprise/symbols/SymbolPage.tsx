@@ -228,14 +228,17 @@ export const SymbolPage: React.FunctionComponent<Props> = ({
                     <FileLocations
                         location={location}
                         locations={of(
-                            symbol.references.nodes.slice(1, 4).map<Location>(reference => ({
-                                uri: makeRepoURI({
-                                    repoName: reference.resource.repository.name,
-                                    commitID: reference.resource.commit.oid,
-                                    filePath: reference.resource.path,
-                                }),
-                                range: reference.range!,
-                            }))
+                            symbol.references.nodes
+                                .slice(0, -1)
+                                .slice(0, 3)
+                                .map<Location>(reference => ({
+                                    uri: makeRepoURI({
+                                        repoName: reference.resource.repository.name,
+                                        commitID: reference.resource.commit.oid,
+                                        filePath: reference.resource.path,
+                                    }),
+                                    range: reference.range!,
+                                }))
                         )}
                         icon={SourceRepositoryIcon}
                         isLightTheme={false /* TODO(sqs) */}
@@ -245,15 +248,15 @@ export const SymbolPage: React.FunctionComponent<Props> = ({
                     />
                 </section>
             )}
-            {symbol.editCommits && symbol.editCommits.nodes.length > 1 && (
+            {symbol.editCommits && symbol.editCommits.nodes.length > 0 && (
                 <section id="refs" className="my-4">
                     <h2 className="mt-0 mx-3 mb-0 h4">Changes</h2>
                     {symbol.editCommits.nodes.map(commit => (
-                        <GitCommitNode key={commit.oid} node={commit} />
+                        <GitCommitNode key={commit.oid} node={commit} className="px-3" compact={true} />
                     ))}
                 </section>
             )}
-            {symbol.children && (
+            {symbol.children.nodes.length > 0 && (
                 <ContainerSymbolsList
                     symbols={symbol.children.nodes.sort((a, b) => (a.kind < b.kind ? -1 : 1))}
                     history={history}
