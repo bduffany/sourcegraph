@@ -1223,15 +1223,9 @@ func (r *searchResolver) doResultsWithAlerts(ctx context.Context) (*SearchResult
 		alert = alertForMissingRepoRevs(missingRepoRevs.patternType, missingRepoRevs.missingRepoRevs)
 	}
 
-	// If we have some results, only log the error instead of returning it,
-	// because otherwise the client would not receive the partial results
-	if len(rr.SearchResults) > 0 && err != nil {
-		log15.Error("Errors during search", "error", err)
-		err = nil
-	}
-
-	// If we have an alert and an error, log the error and just return the alert.
-	if alert != nil && err != nil {
+	// If we have some results or an alert, only log the error instead of returning it.
+	// Otherwise the client would not receive the partial results or see the alert.
+	if (len(rr.SearchResults) > 0 || alert != nil) && err != nil {
 		log15.Error("Errors during search", "error", err)
 		err = nil
 	}
@@ -1876,6 +1870,9 @@ func (r *searchResolver) isGlobalSearch() bool {
 // regardless of what `type:` is specified in the query string.
 //
 // Partial results AND an error may be returned.
+//
+// The resolver will never contain an alert. It is the responsibility of the
+// caller to convert the returned error to an alert and update the resolver.
 func (r *searchResolver) doResults(ctx context.Context, forceOnlyResultType string) (_ *SearchResultsResolver, err error) {
 	tr, ctx := trace.New(ctx, "doResults", r.rawQuery())
 	defer func() {
@@ -2098,10 +2095,14 @@ func (r *searchResolver) doResults(ctx context.Context, forceOnlyResultType stri
 
 	r.sortResults(ctx, results)
 
+	// Note: We are in the process of refactoring doResults to return just `results,
+	// common, error`. Do not rely on doResults returning a resolver.
 	resultsResolver := SearchResultsResolver{
 		start:               start,
 		searchResultsCommon: common,
 		SearchResults:       results,
+		// Don't set `alert` here, instead convert err to an alert upstream (see
+		// doResultsWithAlerts).
 	}
 	return &resultsResolver, multiErr.ErrorOrNil()
 }
@@ -2126,7 +2127,8 @@ func (structuralSearchNoIndexedReposErr) Error() string {
 	return "no indexed repositories for structural search"
 }
 
-// convertErrorsForStructuralSearch converts certain text-based errors to typed errors.
+// convertErrorsForStructuralSearch converts certain text-based errors to
+// sentinel errors and returns a new multierr. len(multierr) is an invariant.
 func convertErrorsForStructuralSearch(multiErr *multierror.Error) (newMultiErr *multierror.Error) {
 	if multiErr == nil {
 		return newMultiErr
