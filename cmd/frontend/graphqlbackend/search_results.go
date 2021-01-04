@@ -1201,36 +1201,9 @@ func (r *searchResolver) Results(ctx context.Context) (srr *SearchResultsResolve
 func (r *searchResolver) doResultsWithAlerts(ctx context.Context) (*SearchResultsResolver, error) {
 	start := time.Now()
 	rr, err := r.doResults(ctx, "")
-
-	var alert *searchAlert
-
-	newAlert := alertForDiffCommitSearch(err)
-	if newAlert != nil {
-		alert = newAlert
+	if rr == nil && err == nil {
+		panic("doResultsWithAlerts: doResults returned nil resolver and nil err")
 	}
-
-	newAlert = alertForStructuralSearch(err)
-	if newAlert != nil {
-		alert = newAlert
-	}
-
-	if len(rr.SearchResults) == 0 && r.patternType != query.SearchTypeStructural && matchHoleRegexp.MatchString(r.originalQuery) {
-		alert = alertForStructuralSearchNotSet(r.originalQuery)
-	}
-
-	missingRepoRevs := errMissingRepoRevs{}
-	if errors.As(err, &missingRepoRevs) {
-		alert = alertForMissingRepoRevs(missingRepoRevs.patternType, missingRepoRevs.missingRepoRevs)
-	}
-
-	// If we have some results or an alert, only log the error instead of returning it.
-	// Otherwise the client would not receive the partial results or see the alert.
-	if (len(rr.SearchResults) > 0 || alert != nil) && err != nil {
-		log15.Error("Errors during search", "error", err)
-		err = nil
-	}
-
-	rr.alert = alert
 
 	// If we encountered a context timeout, it indicates one of the many result
 	// type searchers (file, diff, symbol, etc) completely timed out and could not
@@ -1247,6 +1220,36 @@ func (r *searchResolver) doResultsWithAlerts(ctx context.Context) (*SearchResult
 		suggestTime := longer(2, usedTime)
 		return alertForTimeout(usedTime, suggestTime, r).wrap(), nil
 	}
+
+	if rr == nil && err != nil {
+		return rr, err
+	}
+
+	// rr != nil
+	var alert *searchAlert
+	newAlert := alertForDiffCommitSearch(err)
+	if newAlert != nil {
+		alert = newAlert
+	}
+	newAlert = alertForStructuralSearch(err)
+	if newAlert != nil {
+		alert = newAlert
+	}
+	if len(rr.SearchResults) == 0 && r.patternType != query.SearchTypeStructural && matchHoleRegexp.MatchString(r.originalQuery) {
+		alert = alertForStructuralSearchNotSet(r.originalQuery)
+	}
+	missingRepoRevs := errMissingRepoRevs{}
+	if errors.As(err, &missingRepoRevs) {
+		alert = alertForMissingRepoRevs(missingRepoRevs.patternType, missingRepoRevs.missingRepoRevs)
+	}
+	// If we have some results or an alert, only log the error instead of returning it.
+	// Otherwise the client would not receive the partial results or see the alert.
+	if (len(rr.SearchResults) > 0 || alert != nil) && err != nil {
+		log15.Error("Errors during search", "error", err)
+		err = nil
+	}
+	rr.alert = alert
+
 	return rr, err
 }
 
