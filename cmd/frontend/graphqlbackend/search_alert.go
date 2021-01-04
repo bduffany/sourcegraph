@@ -528,21 +528,21 @@ func alertForDiffCommitSearch(err error) *searchAlert {
 // related to structural search. We surface one alert at a time, so for multiple
 // errors only the first error will be surfaced as alert.
 func alertForStructuralSearch(err error) *searchAlert {
-	if errors.Is(err, structuralSearchMemErr) {
+	if errors.Is(err, errStructuralSearchMem) {
 		return &searchAlert{
 			prometheusType: "structural_search_needs_more_memory",
 			title:          "Structural search needs more memory",
 			description:    "Running your structural search may require more memory. If you are running the query on many repositories, try reducing the number of repositories with the `repo:` filter.",
 		}
 	}
-	if errors.Is(err, structuralSearchMemSearcherErr) {
+	if errors.Is(err, errStructuralSearchSearcher) {
 		return &searchAlert{
 			prometheusType: "structural_search_needs_more_memory__give_searcher_more_memory",
 			title:          "Structural search needs more memory",
 			description:    `Running your structural search requires more memory. You could try reducing the number of repositories with the "repo:" filter. If you are an administrator, try double the memory allocated for the "searcher" service. If you're unsure, reach out to us at support@sourcegraph.com.`,
 		}
 	}
-	var indexErr structuralSearchNoIndexedReposErr
+	var indexErr errStructuralSearchNoIndexedRepos
 	if errors.As(err, &indexErr) {
 		return &searchAlert{
 			prometheusType: "structural_search_on_zero_indexed_repos",

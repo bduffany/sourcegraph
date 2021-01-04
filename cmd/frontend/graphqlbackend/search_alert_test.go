@@ -203,7 +203,7 @@ func TestAlertForStructuralSearch(t *testing.T) {
 			name: "surface_friendly_alert_on_oom_err_message",
 			errors: []error{
 				errors.New("some error"),
-				structuralSearchMemErr,
+				errStructuralSearchMem,
 				errors.New("some other error"),
 			},
 			wantAlertTitle: "Structural search needs more memory",
@@ -212,7 +212,7 @@ func TestAlertForStructuralSearch(t *testing.T) {
 			name: "surface_friendly_alert_on_oom_err_message",
 			errors: []error{
 				errors.New("some error"),
-				structuralSearchMemSearcherErr,
+				errStructuralSearchSearcher,
 				errors.New("some other error"),
 			},
 			wantAlertTitle: "Structural search needs more memory",
@@ -221,7 +221,7 @@ func TestAlertForStructuralSearch(t *testing.T) {
 			name: "surface_friendly_alert_on_oom_err_message",
 			errors: []error{
 				errors.New("some error"),
-				structuralSearchNoIndexedReposErr{msg: "Learn more about managing indexed repositories in our documentation: https://docs.sourcegraph.com/admin/search#indexed-search."},
+				errStructuralSearchNoIndexedRepos{msg: "Learn more about managing indexed repositories in our documentation: https://docs.sourcegraph.com/admin/search#indexed-search."},
 				errors.New("some other error"),
 			},
 			wantAlertTitle: "Unindexed repositories or repository revisions with structural search",

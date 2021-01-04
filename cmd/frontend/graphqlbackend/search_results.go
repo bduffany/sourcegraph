@@ -1218,7 +1218,7 @@ func (r *searchResolver) doResultsWithAlerts(ctx context.Context) (*SearchResult
 		alert = alertForStructuralSearchNotSet(r.originalQuery)
 	}
 
-	missingRepoRevs := missingRepoRevsErr{}
+	missingRepoRevs := errMissingRepoRevs{}
 	if errors.As(err, &missingRepoRevs) {
 		alert = alertForMissingRepoRevs(missingRepoRevs.patternType, missingRepoRevs.missingRepoRevs)
 	}
@@ -2088,7 +2088,7 @@ func (r *searchResolver) doResults(ctx context.Context, forceOnlyResultType stri
 		len(common.timedout))
 
 	if len(resolved.MissingRepoRevs) > 0 {
-		multiErr = multierror.Append(multiErr, missingRepoRevsErr{r.patternType, resolved.MissingRepoRevs})
+		multiErr = multierror.Append(multiErr, errMissingRepoRevs{r.patternType, resolved.MissingRepoRevs})
 	}
 
 	multiErr = convertErrorsForStructuralSearch(multiErr)
@@ -2107,23 +2107,23 @@ func (r *searchResolver) doResults(ctx context.Context, forceOnlyResultType stri
 	return &resultsResolver, multiErr.ErrorOrNil()
 }
 
-type missingRepoRevsErr struct {
+type errMissingRepoRevs struct {
 	patternType     query.SearchType
 	missingRepoRevs []*search.RepositoryRevisions
 }
 
-func (missingRepoRevsErr) Error() string {
+func (errMissingRepoRevs) Error() string {
 	return "missing repository revisions"
 }
 
-var structuralSearchMemErr = fmt.Errorf("structural search needs more memory")
-var structuralSearchMemSearcherErr = fmt.Errorf("searcher needs more memory")
+var errStructuralSearchMem = fmt.Errorf("structural search needs more memory")
+var errStructuralSearchSearcher = fmt.Errorf("searcher needs more memory")
 
-type structuralSearchNoIndexedReposErr struct {
+type errStructuralSearchNoIndexedRepos struct {
 	msg string
 }
 
-func (structuralSearchNoIndexedReposErr) Error() string {
+func (errStructuralSearchNoIndexedRepos) Error() string {
 	return "no indexed repositories for structural search"
 }
 
@@ -2135,9 +2135,9 @@ func convertErrorsForStructuralSearch(multiErr *multierror.Error) (newMultiErr *
 	}
 	for _, err := range multiErr.Errors {
 		if strings.Contains(err.Error(), "Worker_oomed") || strings.Contains(err.Error(), "Worker_exited_abnormally") {
-			newMultiErr = multierror.Append(newMultiErr, structuralSearchMemErr)
+			newMultiErr = multierror.Append(newMultiErr, errStructuralSearchMem)
 		} else if strings.Contains(err.Error(), "Out of memory") {
-			newMultiErr = multierror.Append(newMultiErr, structuralSearchMemSearcherErr)
+			newMultiErr = multierror.Append(newMultiErr, errStructuralSearchSearcher)
 		} else if strings.Contains(err.Error(), "no indexed repositories for structural search") {
 			var msg string
 			if envvar.SourcegraphDotComMode() {
@@ -2145,7 +2145,7 @@ func convertErrorsForStructuralSearch(multiErr *multierror.Error) (newMultiErr *
 			} else {
 				msg = "Learn more about managing indexed repositories in our documentation: https://docs.sourcegraph.com/admin/search#indexed-search."
 			}
-			newMultiErr = multierror.Append(newMultiErr, structuralSearchNoIndexedReposErr{msg: msg})
+			newMultiErr = multierror.Append(newMultiErr, errStructuralSearchNoIndexedRepos{msg: msg})
 		} else {
 			newMultiErr = multierror.Append(newMultiErr, err)
 		}

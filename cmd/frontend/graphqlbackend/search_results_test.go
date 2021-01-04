@@ -1343,11 +1343,11 @@ func TestConvertErrorsForStructuralSearch(t *testing.T) {
 			},
 			wantErrors: []error{
 				errors.New("some error"),
-				structuralSearchMemErr,
+				errStructuralSearchMem,
 				errors.New("some other error"),
-				structuralSearchMemSearcherErr,
+				errStructuralSearchSearcher,
 				errors.New("yet another error"),
-				structuralSearchNoIndexedReposErr{msg: "Learn more about managing indexed repositories in our documentation: https://docs.sourcegraph.com/admin/search#indexed-search."},
+				errStructuralSearchNoIndexedRepos{msg: "Learn more about managing indexed repositories in our documentation: https://docs.sourcegraph.com/admin/search#indexed-search."},
 			},
 		},
 	}
